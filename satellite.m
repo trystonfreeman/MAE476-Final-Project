@@ -20,7 +20,7 @@ classdef satellite
             
         end
         function maneuver(obj)
-
+            
         end
     end
 end
