@@ -34,6 +34,7 @@ orb = 1;
 
 %openfig("constellation.fig")
 
+%% Find intersection point
 Dist = zeros(length(q4),1);
 for i = 1:length(q4(:,1))
     D1 = 10000000*ones(length(q5),1);
@@ -44,13 +45,42 @@ for i = 1:length(q4(:,1))
 end
 midpoint = floor(length(Dist)/2);
 minDist1 = min(Dist(1:midpoint));
-minInd1 = find(Dist == minDist1)
-minDist2 = min(Dist(midpoint+1:end));
-minInd2 = find(Dist == minDist2)
+minInd1 = find(Dist == minDist1); % index of q4
 
+
+minInd2 = find(vecnorm(q5(:,1:3) - q4(minInd1,1:3),2,2) == min(vecnorm(q5(:,1:3) - q4(minInd1,1:3),2,2)));
+
+
+
+
+%% Find delta v needed for plane change
+% Omega4 = acosd(n4*[1 0 0]/norm(n4));
+% Omega5 = acosd(n5*[1 0 0]/norm(n5));
+% 
+% i = [acosd(h4*[0 0 1]/norm(h4)) acosd(h5*[0 0 1]/norm(h5))];
+% 
+% delta = acosd(cosd(i(1))*cosd(i(2)) + sind(i(1))*sind(i(2))*cosd(DOmega));
+% 
+% Rpch = [cosd(delta) + ux^2*(1-cosd(delta)), ux*uy*(1-osd(delta)) - uz*sind(delta), ux*uz*(1-cosd(delta) + uy*sind(delta));
+%      uy*ux*(1-cosd(delta)) + uz*sind(delta), cosd(delta) + uy^2*(1-cosd(delta)), uy*uz*(1-cosd(delta)-ux*sind(delta));
+%      uz*ux*(1-cosd(delta))-uy*sind(delta), uz*uy*(1-cosd(delta))+ux*sind(delta), cosd(delta) + ux^2*(1-cosd(delta))];
+
+v1 = q4(minInd1,4:6);
+v2 = q5(minInd2,4:6);
+deltav = v2-v1;
+
+%% calculate tragectory
+qs = q4(1:minInd1,:);
+[t,od] = ode45(@dqdt3d,0:100:.5*T1,qs(end,:) + [0 0 0 deltav],options);
+qs = [qs;od];
+
+%% Plot
 hold on
 plot3([q4(minInd1,1) q4(minInd2,1)],[q4(minInd1,2) q4(minInd2,2)],[q4(minInd1,3) q4(minInd2,3)],'o','Color','k')
 plot3(posmat(1,:),posmat(2,:),posmat(3,:),'o','Color','g','LineWidth',2)
+
+plot3(qs(:,1),qs(:,2),qs(:,3),'LineWidth',3,'Color','g')
+
 quiver3(0,0,0,0,5000,0,"Color",'k')
 quiver3(0,0,0,5000,0,0,"Color",'k')
 quiver3(0,0,0,0,0,5000,"Color",'k')
