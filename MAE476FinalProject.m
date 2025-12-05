@@ -9,17 +9,17 @@ i_inner = 80; % [deg]
 i_outer = 60; % [deg]
 
 inner_sats = satellite.empty(0,6);
-inner_sats(1) = satellite(mu,a_inner,i_inner,0,0);
-inner_sats(2) = satellite(mu,a_inner,i_inner,0,180);
-inner_sats(3) = satellite(mu,a_inner,i_inner,120,60);
-inner_sats(4) = satellite(mu,a_inner,i_inner,120,240);
-inner_sats(5) = satellite(mu,a_inner,i_inner,240,120);
-inner_sats(6) = satellite(mu,a_inner,i_inner,240,300);
+inner_sats(1) = satellite(a_inner,i_inner,0,0);
+inner_sats(2) = satellite(a_inner,i_inner,0,180);
+inner_sats(3) = satellite(a_inner,i_inner,120,60);
+inner_sats(4) = satellite(a_inner,i_inner,120,240);
+inner_sats(5) = satellite(a_inner,i_inner,240,120);
+inner_sats(6) = satellite(a_inner,i_inner,240,300);
 
 outer_sats = satellite.empty(0,3);
-outer_sats(1) = satellite(mu,a_outer,i_outer,0,0);
-outer_sats(2) = satellite(mu,a_outer,i_outer,120,0);
-outer_sats(3) = satellite(mu,a_outer,i_outer,240,0);
+outer_sats(1) = satellite(a_outer,i_outer,0,0);
+outer_sats(2) = satellite(a_outer,i_outer,120,0);
+outer_sats(3) = satellite(a_outer,i_outer,240,0);
 
 servicer_1 = inner_sats(1);
 servicer_2 = inner_sats(1);
