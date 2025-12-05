@@ -22,7 +22,7 @@ outer_sats(2) = satellite(mu,a_outer,i_outer,120,0);
 outer_sats(3) = satellite(mu,a_outer,i_outer,240,0);
 
 servicer_1 = inner_sats(1);
-servicer_2 = inner_sats(2);
+servicer_2 = inner_sats(1);
 
 %% Plan Maneuvers
 
@@ -59,3 +59,4 @@ servicer_2 = inner_sats(2);
 % Maneuver 7
 
 % Maneuver 8
+figure()
