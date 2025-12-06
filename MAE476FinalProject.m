@@ -1,8 +1,8 @@
 clc
 clear
 close all
-dt = 100;
-T_total = 36000;
+dt = 10;
+T_total = 3600;
 t = 0:dt:T_total;
 N = T_total/dt + 1;
 
@@ -35,16 +35,20 @@ inner_sat_pos = NaN(18,N);
 outer_sat_pos = NaN(9,N);
 
 inner_sat_omega = NaN(6,N);
+inner_sat_h = NaN(18,N);
 inner_sat_u = NaN(6,N);
 %% Simulate Satellites (Assumptions)
 for i=1:N
 
     for j=1:6
+        % Logs values at each time step
         inner_sat_pos(3*j-2:3*j,i) = inner_sats(j).r;
-        inner_sats(j) = inner_sats(j).propagate(dt);
-        
-        inner_sat_omega(j,i) = inner_sats(j).omega;
+        inner_sat_h(3*j-2:3*j,i) = inner_sats(j).h;
         inner_sat_u(j,i) = inner_sats(j).u;
+        inner_sat_omega(j,i) = inner_sats(j).omega;
+        
+        % propagate next time step
+        inner_sats(j) = inner_sats(j).propagate(dt);
     end
     for j = 1:3
         outer_sat_pos(3*j-2:3*j,i) = outer_sats(j).r;
@@ -57,13 +61,19 @@ hold on
 for i = 1:6
 plot3(inner_sat_pos(3*i-2,:),inner_sat_pos(3*i-1,:),inner_sat_pos(3*i,:))
 end
+sat13_intercept = a_inner*normalize(cross(inner_sat_h(1:3,:),inner_sat_h(7:9,:)));
+plot3(sat13_intercept(1,:),sat13_intercept(2,:),sat13_intercept(3,:))
+legend()
 for i = 1:3
-plot3(outer_sat_pos(3*i-2,:),outer_sat_pos(3*i-1,:),outer_sat_pos(3*i,:))
+%plot3(outer_sat_pos(3*i-2,:),outer_sat_pos(3*i-1,:),outer_sat_pos(3*i,:))
 end
 view(3)
 
 figure()
 plot(t,inner_sat_u(1,:))
+figure()
+
+
 %% Simulate Satellites (ODE45)
 
 
@@ -86,7 +96,7 @@ plot(t,inner_sat_u(1,:))
 % Maneuver 8
 
 %% Simulate Maneuvers
-
+for i = 1:N
 % Maneuver 1
 
 % Maneuver 2
@@ -102,3 +112,4 @@ plot(t,inner_sat_u(1,:))
 % Maneuver 7
 
 % Maneuver 8
+end
