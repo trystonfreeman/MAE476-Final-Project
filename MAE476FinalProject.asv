@@ -1,8 +1,8 @@
 clc
 clear
 close all
-dt = 100;
-T_total = 36000;
+dt = 10;
+T_total = 1000;
 t = 0:dt:T_total;
 N = T_total/dt + 1;
 
@@ -32,8 +32,7 @@ servicer_1 = inner_sats(1);
 servicer_2 = inner_sats(1);
 
 inner_sat_pos = NaN(18,N);
-outer_sat_pos = NaN(9,N);
-
+inner_sat_pos_const_omega = NaN(18,N);
 inner_sat_omega = NaN(6,N);
 inner_sat_u = NaN(6,N);
 %% Simulate Satellites (Assumptions)
@@ -41,29 +40,20 @@ for i=1:N
 
     for j=1:6
         inner_sat_pos(3*j-2:3*j,i) = inner_sats(j).r;
+        inner_sat_pos_const_omega(3*j-2:3*j,i) = inner_sats_const_omega(j).r;
         inner_sats(j) = inner_sats(j).propagate(dt);
+        inner_sats_const_omega(j).propagate(dt);
         
         inner_sat_omega(j,i) = inner_sats(j).omega;
         inner_sat_u(j,i) = inner_sats(j).u;
     end
-    for j = 1:3
-        outer_sat_pos(3*j-2:3*j,i) = outer_sats(j).r;
-        outer_sats(j) = outer_sats(j).propagate(dt);
-    end
 end
-
-figure()
-hold on
-for i = 1:6
-plot3(inner_sat_pos(3*i-2,:),inner_sat_pos(3*i-1,:),inner_sat_pos(3*i,:))
-end
-for i = 1:3
-plot3(outer_sat_pos(3*i-2,:),outer_sat_pos(3*i-1,:),outer_sat_pos(3*i,:))
-end
-view(3)
-
+pos_error = inner_sat_pos_const_omega - inner_sat_pos;
+plot3(inner_sat_pos(1,:),inner_sat_pos(2,:),inner_sat_pos(3,:))
 figure()
 plot(t,inner_sat_u(1,:))
+figure()
+plot(t,pos_error(1,:))
 %% Simulate Satellites (ODE45)
 
 
