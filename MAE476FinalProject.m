@@ -46,7 +46,7 @@ for i=1:N
         inner_sat_h(3*j-2:3*j,i) = inner_sats(j).h;
         inner_sat_u(j,i) = inner_sats(j).u;
         inner_sat_omega(j,i) = inner_sats(j).omega;
-        
+
         % propagate next time step
         inner_sats(j) = inner_sats(j).propagate(dt);
     end
@@ -58,7 +58,7 @@ end
 
 figure()
 hold on
-for i = 1:6
+for i = 1:2
 plot3(inner_sat_pos(3*i-2,:),inner_sat_pos(3*i-1,:),inner_sat_pos(3*i,:))
 end
 sat13_intercept = a_inner*normalize(cross(inner_sat_h(1:3,:),inner_sat_h(7:9,:)));
@@ -77,23 +77,40 @@ figure()
 %% Simulate Satellites (ODE45)
 
 
-%% Plan Maneuvers
+%% Plan Maneuvers (Option 1)
 
-% Maneuver 1
+% Servicer 1 (Staying in center)
+    % Maneuver 1 (sat 1 -> sat 2)
+    % Phase
 
-% Maneuver 2
+    % Maneuver 2-3 (sat 2 -> sat 3)
+    % Plane Change
+    % Phase
 
-% Maneuver 3
+    % Maneuver 4 (sat 3 -> sat 4)
+    % Phase
 
-% Maneuver 4
+    % Maneuver 5-6 (sat 4 -> sat 5)
+    % Plane Change
 
-% Maneuver 5
+    % Phase
 
-% Maneuver 6
+    % Maneuver 7 (sat 5 -> sat 6)
+    % Phase
 
-% Maneuver 7
+% Servicer 2 (Going to outer ring)
+    % Maneuver 8-10 (sat 1 -> sat 7)
+    % Hohmann
 
-% Maneuver 8
+    % Plane Change
+
+    % Phase
+
+    % Maneuver 11 (sat 7 -> sat 8)
+    % Plane Change
+
+    % Maneuver 12 (sat 8 -> sat 9)
+    % Plane Change
 
 %% Simulate Maneuvers
 for i = 1:N
