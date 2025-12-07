@@ -2,12 +2,11 @@ clc
 clear
 close all
 tic
-dt = 0.001;
-T_total = 1500;
+dt = 1;
+T_total = 6400;
 t = 0:dt:T_total;
 N = T_total/dt + 1;
 
-mu = 1; % CHANGE ME
 a_inner = 7378.14; % [km]
 a_outer = 8378.14; % [km]
 i_inner = 80; % [deg]
@@ -38,11 +37,8 @@ outer_sat_pos = NaN(9,N);
 inner_sat_omega = NaN(6,N);
 inner_sat_h = NaN(18,N);
 inner_sat_u = NaN(6,N);
-intercept13 = NaN(3,N);
-alt_intercept13 = NaN(3,N);
-separation = NaN(1,N);
-separation_alt = separation;
-t_intercept = Intercept(inner_sats(1),inner_sats(2))
+
+
 %% Simulate Satellites (Assumptions)
 for i=1:N
 
@@ -54,13 +50,9 @@ for i=1:N
         inner_sat_omega(j,i) = inner_sats(j).omega;
         
         % propagate next time step
-        inner_sats(j) = inner_sats(j).propagate(dt);
+        inner_sats(j) = inner_sats(j).propagate(t(i));
         
     end
-    intercept13(:,i) = a_inner*cross(inner_sat_h(1:3,i),inner_sat_h(7:9,i))/norm(cross(inner_sat_h(1:3,i),inner_sat_h(7:9,i)));
-    alt_intercept13(:,i) = -intercept13(:,i);
-    separation(i) = norm(intercept13(:,i)-inner_sat_pos(1:3,i));
-    separation_alt(i) = norm(alt_intercept13(:,i)-inner_sat_pos(1:3,i));
 
     for j = 1:3
         outer_sat_pos(3*j-2:3*j,i) = outer_sats(j).r;
@@ -71,15 +63,11 @@ end
 
 figure()
 hold on
-for i = 1:3
+for i = 4:5
 plot3(inner_sat_pos(3*i-2,:),inner_sat_pos(3*i-1,:),inner_sat_pos(3*i,:))
 %plot3([0,inner_sat_h(3*i-2,1)],[0,inner_sat_h(3*i-1,1)],[0,inner_sat_h(3*i,1)])
 end
 
-plot3([0,intercept13(1,1)],[0,intercept13(2,1)],[0,intercept13(3,1)])
-plot3([0,alt_intercept13(1,1)],[0,alt_intercept13(2,1)],[0,alt_intercept13(3,1)])
-%plot3([0,0],[0,0],[0,a_inner])
-legend()
 for i = 1:3
 %plot3(outer_sat_pos(3*i-2,:),outer_sat_pos(3*i-1,:),outer_sat_pos(3*i,:))
 end
@@ -88,11 +76,6 @@ view(3)
 figure()
 plot(t,inner_sat_u(1,:))
 figure()
-plot(t,separation)
-hold on
-plot(t,separation_alt)
-min_separation = min(separation,[],"all")
-min_separation = min(separation_alt,[],"all")
 %% Simulate Satellites (ODE45)
 
 
@@ -101,17 +84,23 @@ min_separation = min(separation_alt,[],"all")
 % Servicer 1 (Staying in center)
     % Maneuver 1 (sat 1 -> sat 2)
     % Phase
-
+    phase_angle1 = inner_sats(1).u - inn
+    t_1 = 0;
     % Maneuver 2-3 (sat 2 -> sat 3)
     % Plane Change
+    t_2 = Intercept(inner_sats(2),inner_sats(3),t_1);
+    inner_sats(2).propagate(t_2);
+    inner_sats(3).propagate(t_2);
     % Phase
-
+    t_3 = t_2;
     % Maneuver 4 (sat 3 -> sat 4)
     % Phase
-
+    t_4 = t_3;
     % Maneuver 5-6 (sat 4 -> sat 5)
     % Plane Change
-
+    t_5 = Intercept(inner_sats(4),inner_sats(5),t_4);
+    inner_sats(4).propagate(t_4);
+    inner_sats(5).propagate(t_4);
     % Phase
 
     % Maneuver 7 (sat 5 -> sat 6)

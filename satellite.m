@@ -6,8 +6,10 @@ classdef satellite
         a
         i
         omega
+        omega_0
         omega_dot
         u
+        u_0
         u_dot
         r
         v
@@ -20,7 +22,9 @@ classdef satellite
             obj.a = a;
             obj.i = i;
             obj.omega = omega;
+            obj.omega_0 = omega;
             obj.u = u;
+            obj.u_0 = u;
             
             [obj.r,obj.v] = get_IJK(obj);
             obj.h = cross(obj.r,obj.v);
@@ -29,10 +33,10 @@ classdef satellite
             obj.T = 2*pi*sqrt(obj.a^3/obj.mu);
             obj.u_dot =360/obj.T;
         end
-        function obj = propagate(obj,dt)
+        function obj = propagate(obj,t)
 
-            obj.u = obj.u + dt*obj.u_dot;
-            obj.omega = obj.omega + (obj.omega_dot)*(180/pi)*dt;
+            obj.u = obj.u_0 + t*obj.u_dot;
+            obj.omega = obj.omega_0 + (obj.omega_dot)*(180/pi)*t;
             [obj.r,obj.v] = get_IJK(obj);
             obj.h = cross(obj.r,obj.v);
         end
@@ -51,6 +55,15 @@ classdef satellite
             r = r*obj.a/norm(r); % effectively normalizes transformation
             v = R3_omega*R1_i*R3_u*[0; sqrt(obj.mu/obj.a); 0];
             v = sqrt(obj.mu/obj.a)*v/norm(v);
+        end
+        function obj = plane_change(obj,sat2)
+            obj.u = obj.u + obj.omega - sat.omega;
+            obj.omega = sat2.omega;
+            obj.i = sat2.i;
+
+        end
+        function obj = phase(obj,sat2)
+            obj.u = sat2.u;
         end
     end
 end
