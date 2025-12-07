@@ -124,7 +124,7 @@ plot3(r1vals(:,1),r1vals(:,2),r1vals(:,3))
 quiver3(r1vals(1:m,1),r1vals(1:m,2),r1vals(1:m,3),v1vals(1:m,1),v1vals(1:m,2),v1vals(1:m,3))
 hold off
 
-%%% Faster version
+%% Faster version
 clear
 close all
 clc
