@@ -1,4 +1,4 @@
-function t_intercept = Intercept(sat1,sat2,t_0)
+function [t_intercept,dv] = Intercept(sat1,sat2,t_0)
     u1 = @(t) wrapTo360(sat1.u_0 + sat1.u_dot*t);
     u2 = @(t) wrapTo360(sat2.u_0 + sat2.u_dot*t);
     omega1 = @(t) sat1.omega_0 + sat1.omega_dot*t;
@@ -35,4 +35,6 @@ function t_intercept = Intercept(sat1,sat2,t_0)
         t_0 = t_intercept + 0.5*sat1.T;
         t_intercept = fsolve(separation,t_0);
     end
+    delta = acosd(cos(sat1.i)^2 +sind(sat1.i)^2*cosd(sat2.omega - sat1.omega));
+    dv = 2*sqrt(sat1.mu/sat1.a)*sin(delta/2);
 end

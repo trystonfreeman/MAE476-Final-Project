@@ -57,7 +57,7 @@ classdef satellite
             v = sqrt(obj.mu/obj.a)*v/norm(v);
         end
         function obj = plane_change(obj,sat2)
-            obj.u = obj.u + obj.omega - sat.omega;
+            obj.u = obj.u + obj.omega - sat2.omega;
             obj.omega = sat2.omega;
             obj.i = sat2.i;
 

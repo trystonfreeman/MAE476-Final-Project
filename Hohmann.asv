@@ -1,8 +1,8 @@
 % Hohmann transfer between 2 circular orbits around a given body
-function [dv_1,dv_2,dt,dtheta] = Hohmann(mu, r_1, r_2)
-    v_1 = sqrt(mu/r_1);
-    v_2 = sqrt(mu/r_2);
-    a_t = (r_1 + r_2)/2;
+function [dv_1,dv_2,dt,dtheta] = Hohmann(sat1,sat2)
+    v_1 = sqrt(sat1.mu/sat1.a);
+    v_2 = sqrt(sat2.mu/sat2.a);
+    a_t = (sat1.a + sat2.a)/2;
 
     dv_1 = sqrt(mu*(2/r_1 -1/a_t)) - v_1; % initial delta v required (scalar)
     dv_2 = v_2 - sqrt(mu*(2/r_2 -1/a_t)); % secondary delta v required (scalar)
