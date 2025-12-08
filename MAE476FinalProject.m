@@ -2,8 +2,8 @@ clc
 clear
 close all
 tic
-dt = 1;
-T_total = 6400;
+dt = 1;  % [s]
+T_total = 6400; %[s]
 t = 0:dt:T_total;
 N = T_total/dt + 1;
 
@@ -64,7 +64,7 @@ dv = 0;
     % Phase
     [dt1,dv1] = Phase(inner_sats(1),inner_sats(2));
     t_1 = t_0 + dt1;
-    dv = dv + dv1;
+    dv_serv1 = dv_serv1 + dv1;
     servicer_1.phase(inner_sats(2));
     
     inner_sats(1).propagate(t_1);
@@ -76,7 +76,7 @@ dv = 0;
     % Maneuver 2-3 (sat 2 -> sat 3)
     % Plane Change
     [t_2,dv2] = Intercept(inner_sats(2),inner_sats(3),t_1);
-    dv = dv + dv2;
+    dv_serv1 = dv_serv1 + dv2;
     inner_sats(2).propagate(t_2);
     inner_sats(3).propagate(t_2);
 
@@ -86,48 +86,59 @@ dv = 0;
     % Phase
     [dt3,dv3] = Phase(inner_sats(2),inner_sats(3));
     t_3 = t_2 + dt3;
-    dv = dv + dv3;
+    dv_serv1 = dv_serv1 + dv3;
     
     % Maneuver 4 (sat 3 -> sat 4)
     % Phase
     [dt4,dv4] = Phase(inner_sats(3),inner_sats(4));
     t_4 = t_3 + dt4;
-    dv = dv + dv4;
+    dv_serv1 = dv_serv1 + dv4;
 
     % Maneuver 5-6 (sat 4 -> sat 5)
     % Plane Change
     [t_5,dv5] = Intercept(inner_sats(4),inner_sats(5),t_4);
-    dv = dv + dv5;
+    dv_serv1 = dv_serv1 + dv5;
     inner_sats(4).propagate(t_5);
     inner_sats(5).propagate(t_5);
     % Phase
     [dt6,dv6] = Phase(inner_sats(3),inner_sats(4));
     t_6 = t_5 + dt6;
-    dv = dv + dv6;
+    dv_serv1 = dv_serv1 + dv6;
 
     % Maneuver 7 (sat 5 -> sat 6)
     % Phase
     [dt7,dv7] = Phase(inner_sats(3),inner_sats(4));
     t_7 = t_6 + dt7;
-    dv = dv + dv7;
+    dv_serv1 = dv_serv1 + dv7;
+    dv = dv_serv1;
 
 % THIS NEEDS WORK
 % Servicer 2 (Going to outer ring)
     % Maneuver 8-10 (sat 1 -> sat 7)
     % Hohmann
-    [dv8a,dv8b,dt8,dtheta8] = Hohmann(inner_sats(1),outer_sats(1));
+    [dv8a,dv8b,dt8,dtheta8] = Hohmann(servicer_2,outer_sats(1));
     t_8 = dt8;
-    %dv = dv + dv8a + dv8b;
+    dv_serv2 = dv8a + dv8b;
+
     % Plane Change
     [t_9,dv9] = Intercept(servicer_2,outer_sats(1),t_8);
-    %dv = dv + abs(dv9);
+    dv_serv2 = dv_serv2 + abs(dv9);
+
     % Phase
+    [dt10,dv10] = Intercept(servicer_2,outer_sats(1),t_9);
+    dv_serv2 = dv_serv2 + abs(dv10);
 
     % Maneuver 11 (sat 7 -> sat 8)
     % Plane Change
+    [t_11,dv11] = Intercept(servicer_2,outer_sats(2),t_10);
+    dv_serv2 = dv_serv2 + abs(dv11);
 
     % Maneuver 12 (sat 8 -> sat 9)
     % Plane Change
+    [t_12,dv12] = Intercept(servicer_2,outer_sats(3),t_11);
+    dv_serv2 = dv_serv2 + abs(dv12);
+
+%% Plan Maneuvers (Option 2)
 
 %% Calculate Masses
 g0 = 9.81; % [m/s^2]
