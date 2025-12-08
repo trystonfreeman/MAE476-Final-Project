@@ -2,8 +2,8 @@ clc
 clear
 close all
 tic
-dt = 1;
-T_total = 6400;
+dt = 1;  % [s]
+T_total = 6400; %[s]
 t = 0:dt:T_total;
 N = T_total/dt + 1;
 
@@ -110,25 +110,31 @@ dv = 0;
     [dt7,dv7] = Phase(inner_sats(3),inner_sats(4));
     t_7 = t_6 + dt7;
     dv = dv + dv7;
+    dv1 = dv;
 
 % THIS NEEDS WORK
 % Servicer 2 (Going to outer ring)
     % Maneuver 8-10 (sat 1 -> sat 7)
     % Hohmann
-    [dv8a,dv8b,dt8,dtheta8] = Hohmann(inner_sats(1),outer_sats(1));
+    [dv8a,dv8b,dt8,dtheta8] = Hohmann(servicer_2,outer_sats(1));
     t_8 = dt8;
     %dv = dv + dv8a + dv8b;
     % Plane Change
     [t_9,dv9] = Intercept(servicer_2,outer_sats(1),t_8);
     %dv = dv + abs(dv9);
     % Phase
+    [dt10,dv10] = Intercept(servicer_2,outer_sats(1),t_9);
+    dv_serv2 = dv_serv2 + abs(dv10);
 
     % Maneuver 11 (sat 7 -> sat 8)
     % Plane Change
+    [t_11,dv11] = Intercept(servicer_2,outer_sats(2),t_10);
+    dv_serv2 = dv_serv2 + abs(dv11);
 
     % Maneuver 12 (sat 8 -> sat 9)
     % Plane Change
-
+    [t_12,dv12] = Intercept(servicer_2,outer_sats(3),t_11);
+    dv_serv2 = dv_serv2 + abs(dv12);
 %% Calculate Masses
 g0 = 9.81; % [m/s^2]
 Isp = 250; %[s]
