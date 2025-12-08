@@ -19,10 +19,7 @@ inner_sats(4) = satellite(a_inner,i_inner,120,240);
 inner_sats(5) = satellite(a_inner,i_inner,240,120);
 inner_sats(6) = satellite(a_inner,i_inner,240,300);
 
-inner_sats_const_omega = inner_sats;
-for i = 1:6
-%inner_sats(i).omega_dot = 0;
-end
+
 outer_sats = satellite.empty(0,3);
 outer_sats(1) = satellite(a_outer,i_outer,0,0);
 outer_sats(2) = satellite(a_outer,i_outer,120,0);
@@ -34,48 +31,26 @@ servicer_2 = inner_sats(1);
 inner_sat_pos = NaN(18,N);
 outer_sat_pos = NaN(9,N);
 
-inner_sat_omega = NaN(6,N);
-inner_sat_h = NaN(18,N);
-inner_sat_u = NaN(6,N);
-
 
 %% Simulate Satellites (Assumptions)
 for i=1:N
 
-    for j=1:6
+    for j=1:6 % Inner Sats
         % Logs values at each time step
         inner_sat_pos(3*j-2:3*j,i) = inner_sats(j).r;
-        inner_sat_h(3*j-2:3*j,i) = inner_sats(j).h;
-        inner_sat_u(j,i) = inner_sats(j).u;
-        inner_sat_omega(j,i) = inner_sats(j).omega;
         
         % propagate next time step
         inner_sats(j) = inner_sats(j).propagate(t(i));
         
     end
 
-    for j = 1:3
+    for j = 1:3 % Outer Sats
         outer_sat_pos(3*j-2:3*j,i) = outer_sats(j).r;
         outer_sats(j) = outer_sats(j).propagate(dt);
     end
     
 end
 
-figure()
-hold on
-for i = 1:6
-plot3(inner_sat_pos(3*i-2,:),inner_sat_pos(3*i-1,:),inner_sat_pos(3*i,:))
-%plot3([0,inner_sat_h(3*i-2,1)],[0,inner_sat_h(3*i-1,1)],[0,inner_sat_h(3*i,1)])
-end
-
-for i = 1:3
-%plot3(outer_sat_pos(3*i-2,:),outer_sat_pos(3*i-1,:),outer_sat_pos(3*i,:))
-end
-view(3)
-
-figure()
-plot(t,inner_sat_u(1,:))
-figure()
 %% Simulate Satellites (ODE45)
 
 
@@ -90,12 +65,12 @@ dv = 0;
     [dt1,dv1] = Phase(inner_sats(1),inner_sats(2));
     t_1 = t_0 + dt1;
     dv = dv + dv1;
-
+    servicer_1.phase(inner_sats(2));
+    
     inner_sats(1).propagate(t_1);
     inner_sats(2).propagate(t_1);
 
-
-    servicer_1.phase(inner_sats(2));
+    
     servicer_1.propagate(t_1);
 
     % Maneuver 2-3 (sat 2 -> sat 3)
@@ -123,8 +98,8 @@ dv = 0;
     % Plane Change
     [t_5,dv5] = Intercept(inner_sats(4),inner_sats(5),t_4);
     dv = dv + dv5;
-    inner_sats(4).propagate(t_4);
-    inner_sats(5).propagate(t_4);
+    inner_sats(4).propagate(t_5);
+    inner_sats(5).propagate(t_5);
     % Phase
     [dt6,dv6] = Phase(inner_sats(3),inner_sats(4));
     t_6 = t_5 + dt6;
@@ -141,11 +116,11 @@ dv = 0;
     % Maneuver 8-10 (sat 1 -> sat 7)
     % Hohmann
     [dv8a,dv8b,dt8,dtheta8] = Hohmann(inner_sats(1),outer_sats(1));
-    t8 = t0+dt8;
-    dv = dv + dv8a + dv8b;
+    t_8 = dt8;
+    %dv = dv + dv8a + dv8b;
     % Plane Change
     [t_9,dv9] = Intercept(servicer_2,outer_sats(1),t_8);
-    dv = dv + dv9;
+    %dv = dv + abs(dv9);
     % Phase
 
     % Maneuver 11 (sat 7 -> sat 8)
@@ -153,6 +128,8 @@ dv = 0;
 
     % Maneuver 12 (sat 8 -> sat 9)
     % Plane Change
+
+%% Calculate Masses
 
 %% Simulate Maneuvers
 for i = 1:N
@@ -173,3 +150,83 @@ for i = 1:N
 % Maneuver 8
 end
 toc
+
+%% Figures
+figure("Name","Constellation")
+hold on
+for i = 1:6
+plot3(inner_sat_pos(3*i-2,:),inner_sat_pos(3*i-1,:),inner_sat_pos(3*i,:))
+%plot3([0,inner_sat_h(3*i-2,1)],[0,inner_sat_h(3*i-1,1)],[0,inner_sat_h(3*i,1)])
+end
+
+for i = 1:3
+plot3(outer_sat_pos(3*i-2,:),outer_sat_pos(3*i-1,:),outer_sat_pos(3*i,:))
+end
+view(3)
+figure("Name","Servicer Path")
+
+figure("Name","Pos Error")
+
+%% Functions
+% Hohmann transfer between 2 circular orbits around a given body
+function [dv_1,dv_2,dt,dtheta] = Hohmann(sat1,sat2)
+    v_1 = sqrt(sat1.mu/sat1.a);
+    v_2 = sqrt(sat2.mu/sat2.a);
+    a_t = (sat1.a + sat2.a)/2;
+
+    dv_1 = sqrt(sat1.mu*(2/sat1.a -1/a_t)) - v_1; % initial delta v required (scalar)
+    dv_2 = v_2 - sqrt(sat2.mu*(2/sat2.a -1/a_t)); % secondary delta v required (scalar)
+    dt = pi*sqrt(a_t^3/sat2.mu); % TOF for transfer (scalar)
+    dtheta = 2*pi*(dt/(2*pi*sqrt(sat2.a^3/sat1.mu))); % angle sat 2 sweeps during transfer
+end
+
+% Intersection of two co-radial circular orbits
+function [t_intercept,dv] = Intercept(sat1,sat2,t_0)
+    u1 = @(t) wrapTo360(sat1.u_0 + sat1.u_dot*t);
+    u2 = @(t) wrapTo360(sat2.u_0 + sat2.u_dot*t);
+    omega1 = @(t) sat1.omega_0 + sat1.omega_dot*t;
+    omega2 = @(t) sat2.omega_0 + sat2.omega_dot*t;
+    R_i = [1 0 0;
+           0 cosd(-sat1.i)  sind(-sat1.i);
+           0 sind(-sat1.i) -cosd(-sat1.i)];
+    R_omega1 = @(t)[cosd(-omega1(t)), sind(-omega1(t)), 0;
+                    sind(-omega1(t)),-cosd(-omega1(t)), 0;
+                    0 0 1];
+    R_omega2 = @(t)[cosd(-omega2(t)), sind(-omega2(t)), 0;
+                    sind(-omega2(t)),-cosd(-omega2(t)), 0;
+                    0 0 1];
+    R_u1 = @(t) [cosd(-u1(t)), sind(-u1(t)), 0;...
+                 sind(-u1(t)),-cosd(-u1(t)), 0;...
+                 0           , 0           , 1];
+    R_u2 = @(t) [cosd(-u2(t)), sind(-u2(t)), 0;...
+                 sind(-u2(t)),-cosd(-u2(t)), 0;...
+                 0           , 0           , 1];
+
+    r1 = @(t)R_omega1(t)*R_i*R_u1(t)*[sat1.a;0;0];
+    r2 = @(t)R_omega2(t)*R_i*R_u2(t)*[sat2.a;0;0];
+
+    v1 = @(t)R_omega1(t)*R_i*R_u1(t)*sqrt(sat1.mu/sat1.a)*[0;1;0];
+    v2 = @(t)R_omega2(t)*R_i*R_u2(t)*sqrt(sat2.mu/sat2.a)*[0;1;0];
+
+    h1 = @(t) cross(r1(t),v1(t));
+    h2 = @(t) cross(r2(t),v2(t));
+    r_intercept = @(t) sat1.a*cross(h1(t),h2(t))/norm(cross(h1(t),h2(t)));
+    separation = @(t) min(norm(r_intercept(t) - r1(t)),norm(-r_intercept(t) - r1(t)));
+
+    t_intercept = fsolve(separation,t_0);
+    if (t_intercept < t_0)
+        t_0 = t_intercept + 0.5*sat1.T;
+        t_intercept = fsolve(separation,t_0);
+    end
+    delta = acosd(cos(sat1.i)^2 +sind(sat1.i)^2*cosd(sat2.omega - sat1.omega));
+    dv = 2*sqrt(sat1.mu/sat1.a)*sin(delta/2);
+end
+
+% Phase maneuver between circular orbits
+function [dt,dv] = Phase(sat1,sat2)
+
+    phase_angle = sat2.u - sat1.u;
+    dt = sat2.T* (1 + phase_angle/360);
+    a_phase = (sat1.mu * (dt/2*pi)^2)^(1/3);
+    dv = 2* abs(sqrt(sat2.mu*(2/sat2.a - 1/a_phase)) - sqrt(sat2.mu/sat2.a));
+end

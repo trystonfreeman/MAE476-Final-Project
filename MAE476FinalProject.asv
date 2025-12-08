@@ -19,10 +19,7 @@ inner_sats(4) = satellite(a_inner,i_inner,120,240);
 inner_sats(5) = satellite(a_inner,i_inner,240,120);
 inner_sats(6) = satellite(a_inner,i_inner,240,300);
 
-inner_sats_const_omega = inner_sats;
-for i = 1:6
-%inner_sats(i).omega_dot = 0;
-end
+
 outer_sats = satellite.empty(0,3);
 outer_sats(1) = satellite(a_outer,i_outer,0,0);
 outer_sats(2) = satellite(a_outer,i_outer,120,0);
@@ -34,48 +31,26 @@ servicer_2 = inner_sats(1);
 inner_sat_pos = NaN(18,N);
 outer_sat_pos = NaN(9,N);
 
-inner_sat_omega = NaN(6,N);
-inner_sat_h = NaN(18,N);
-inner_sat_u = NaN(6,N);
-
 
 %% Simulate Satellites (Assumptions)
 for i=1:N
 
-    for j=1:6
+    for j=1:6 % Inner Sats
         % Logs values at each time step
         inner_sat_pos(3*j-2:3*j,i) = inner_sats(j).r;
-        inner_sat_h(3*j-2:3*j,i) = inner_sats(j).h;
-        inner_sat_u(j,i) = inner_sats(j).u;
-        inner_sat_omega(j,i) = inner_sats(j).omega;
         
         % propagate next time step
         inner_sats(j) = inner_sats(j).propagate(t(i));
         
     end
 
-    for j = 1:3
+    for j = 1:3 % Outer Sats
         outer_sat_pos(3*j-2:3*j,i) = outer_sats(j).r;
         outer_sats(j) = outer_sats(j).propagate(dt);
     end
     
 end
 
-figure()
-hold on
-for i = 1:6
-plot3(inner_sat_pos(3*i-2,:),inner_sat_pos(3*i-1,:),inner_sat_pos(3*i,:))
-%plot3([0,inner_sat_h(3*i-2,1)],[0,inner_sat_h(3*i-1,1)],[0,inner_sat_h(3*i,1)])
-end
-
-for i = 1:3
-%plot3(outer_sat_pos(3*i-2,:),outer_sat_pos(3*i-1,:),outer_sat_pos(3*i,:))
-end
-view(3)
-
-figure()
-plot(t,inner_sat_u(1,:))
-figure()
 %% Simulate Satellites (ODE45)
 
 
@@ -123,8 +98,8 @@ dv = 0;
     % Plane Change
     [t_5,dv5] = Intercept(inner_sats(4),inner_sats(5),t_4);
     dv = dv + dv5;
-    inner_sats(4).propagate(t_4);
-    inner_sats(5).propagate(t_4);
+    inner_sats(4).propagate(t_5);
+    inner_sats(5).propagate(t_5);
     % Phase
     [dt6,dv6] = Phase(inner_sats(3),inner_sats(4));
     t_6 = t_5 + dt6;
@@ -141,7 +116,7 @@ dv = 0;
     % Maneuver 8-10 (sat 1 -> sat 7)
     % Hohmann
     [dv8a,dv8b,dt8,dtheta8] = Hohmann(inner_sats(1),outer_sats(1));
-    t8 = t0+dt8;
+    t_8 = dt8;
     dv = dv + dv8a + dv8b;
     % Plane Change
     [t_9,dv9] = Intercept(servicer_2,outer_sats(1),t_8);
@@ -153,6 +128,8 @@ dv = 0;
 
     % Maneuver 12 (sat 8 -> sat 9)
     % Plane Change
+
+%% Calculate Masses
 
 %% Simulate Maneuvers
 for i = 1:N
@@ -173,3 +150,22 @@ for i = 1:N
 % Maneuver 8
 end
 toc
+
+%% Figures
+figure("Name","Constellation")
+hold on
+for i = 1:6
+plot3(inner_sat_pos(3*i-2,:),inner_sat_pos(3*i-1,:),inner_sat_pos(3*i,:))
+%plot3([0,inner_sat_h(3*i-2,1)],[0,inner_sat_h(3*i-1,1)],[0,inner_sat_h(3*i,1)])
+end
+
+for i = 1:3
+plot3(outer_sat_pos(3*i-2,:),outer_sat_pos(3*i-1,:),outer_sat_pos(3*i,:))
+end
+view(3)
+figure("Name","Servicer Path")
+
+figure("Name","Pos Error")
+
+
+
