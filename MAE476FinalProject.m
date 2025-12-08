@@ -137,6 +137,9 @@ dv = 0;
     % Plane Change
     [t_12,dv12] = Intercept(servicer_2,outer_sats(3),t_11);
     dv_serv2 = dv_serv2 + abs(dv12);
+
+%% Plan Maneuvers (Option 2)
+
 %% Calculate Masses
 
 %% Simulate Maneuvers
