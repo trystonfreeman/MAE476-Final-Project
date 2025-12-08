@@ -118,12 +118,10 @@ dv = 0;
     % Hohmann
     [dv8a,dv8b,dt8,dtheta8] = Hohmann(servicer_2,outer_sats(1));
     t_8 = dt8;
-    dv_serv2 = dv8a + dv8b;
-
+    %dv = dv + dv8a + dv8b;
     % Plane Change
     [t_9,dv9] = Intercept(servicer_2,outer_sats(1),t_8);
-    dv_serv2 = dv_serv2 + abs(dv9);
-
+    %dv = dv + abs(dv9);
     % Phase
     [dt10,dv10] = Intercept(servicer_2,outer_sats(1),t_9);
     dv_serv2 = dv_serv2 + abs(dv10);
@@ -138,6 +136,21 @@ dv = 0;
     [t_12,dv12] = Intercept(servicer_2,outer_sats(3),t_11);
     dv_serv2 = dv_serv2 + abs(dv12);
 %% Calculate Masses
+g0 = 9.81; % [m/s^2]
+Isp = 250; %[s]
+ms = 300; %[kg]
+m_pay = 5; %[kg]
+m_final = ms + m_pay;
+ve = Isp * g0;
+
+% Maneuver 12
+mi = m_final / exp(-dv12*1000/ve);
+m_prop12 = mi - m_final;
+
+% Maneuver 2
+mi = m_final / exp(-dv2*1000/ve);
+m_prop2 = mi - m_final;
+
 
 %% Simulate Maneuvers
 for i = 1:N
