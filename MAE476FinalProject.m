@@ -145,22 +145,11 @@ g0 = 9.81; % [m/s^2]
 Isp = 250; %[s]
 ms = 300; %[kg]
 m_pay = 5; %[kg]
-m_final = ms + m_pay;
+m_final2 = ms + m_pay;
 ve = Isp * g0;
 
-% Maneuver 12
-mi = m_final / exp(-dv12*1000/ve);
-m_prop12 = mi - m_final;
-
-% Maneuver 11
-m_final = m_final + m_prop12;
-mi = m_final / exp(-dv11*1000/ve);
-m_prop11 = mi - m_final;
-
-% Maneuver 10
-m_final = m_final + m_prop11;
-mi = m_final / exp(-dv11*1000/ve);
-m_prop11 = mi - m_final;
+dv_vec = [dv1 dv2 dv3 dv4 dv5 dv6 dv7 dv8 dv9 dv10 dv11 dv12];
+[m_prop, m_history] = prop_mass(dv_vec, Isp, ms, m_pay);
 
 
 %% Simulate Maneuvers
@@ -280,6 +269,35 @@ function [dt,dv1,dv2] = Phase(sat1,sat2)
 end
 
 % Calculate Mass 
-function m_prop = calmass(m_i, m_final, dv)
+function [m_prop, m_final, m_initial] = prop_mass(dv, Isp, ms, m_pay)
+% dv     = vector of maneuvers [dv1 dv2 ... dvN] in km/s
+% Isp    = specific impulse [s]
+% ms     = structural mass [kg]
+% m_pay  = payload mass [kg]
+%
+% m_prop    = propellant used at each maneuver [kg]
+% m_final   = total mass AFTER each maneuver [kg]
+% m_initial = total mass BEFORE each maneuver [kg]
 
+    g0 = 9.81;           % [m/s^2]
+    ve = Isp * g0;       % exhaust velocity [m/s]
+
+    N = length(dv);
+
+    m_prop    = zeros(1, N);
+    m_final   = zeros(1, N);
+    m_initial = zeros(1, N);
+    m_final(N) = ms + m_pay;
+
+    for k = N:-1:1
+
+        mi = m_final(k) / exp(-dv(k)*1000/ve);
+        m_prop(k) = mi - m_final(k);
+        m_initial(k) = mi;
+
+        if k > 1
+            m_final(k-1) = m_final(k) + m_prop(k);
+        end
+    end
 end
+
