@@ -37,4 +37,8 @@ function [t_intercept,dv] = Intercept(sat1,sat2,t_0)
     end
     delta = acosd(cos(sat1.i)^2 +sind(sat1.i)^2*cosd(sat2.omega - sat1.omega));
     dv = 2*sqrt(sat1.mu/sat1.a)*sin(delta/2);
+
+    direction = sign(omega2(t_intercept) - omega1(t_intercept)) * h1(t_intercept)/norm(h1_t_intercept);
+
+    dv = dv * direction;
 end

@@ -8,4 +8,11 @@ function [dv_1,dv_2,dt,dtheta] = Hohmann(sat1,sat2)
     dv_2 = v_2 - sqrt(sat2.mu*(2/sat2.a -1/a_t)); % secondary delta v required (scalar)
     dt = pi*sqrt(a_t^3/sat2.mu); % TOF for transfer (scalar)
     dtheta = 2*pi*(dt/(2*pi*sqrt(sat2.a^3/sat1.mu))); % angle sat 2 sweeps during transfer
+    if (v_1 > v_2)
+        direction =  sat1.v/norm(sat1.v);
+    else
+        direction = -sat1.v/norm(sat1.v);
+    end
+    dv_1 = dv_1 *   direction; % initial delta v required (vector)
+    dv_2 = dv_2 * (-direction); % secondary delta v required (vector)
 end
