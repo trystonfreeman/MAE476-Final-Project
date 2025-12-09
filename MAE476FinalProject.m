@@ -3,9 +3,10 @@ clear
 close all
 tic
 dt = 1;  % [s]
-T_total = 6400; %[s]
+T_total = 40000; %[s]
 t = 0:dt:T_total;
 N = T_total/dt + 1;
+N_man = 12; % Number of maneuvers
 
 a_inner = 7378.14; % [km]
 a_outer = 8378.14; % [km]
@@ -62,16 +63,11 @@ tserv1_0 = 0;
 dv_serv1 = 0;
     % Maneuver 1 (sat 1 -> sat 2)
     % Phase
-    [dt1,dv1a,dv1b] = Phase(inner_sats(1),inner_sats(2));
+    [dt1,dv1a,dv1b] = Phase(servicer_1,inner_sats(2));
     tserv1_1 = tserv1_0 + dt1;
     dv_serv1 = dv_serv1 + norm(dv1a) + norm(dv1b);
-    servicer_1.phase(inner_sats(2));
-    
-    inner_sats(1).propagate(tserv1_1);
-    inner_sats(2).propagate(tserv1_1);
 
-    
-    servicer_1.propagate(tserv1_1);
+    servicer_1.phase(inner_sats(2));
 
     % Maneuver 2-3 (sat 2 -> sat 3)
     % Plane Change
@@ -124,9 +120,10 @@ dv_serv1 = 0;
     dv_serv2 = dv_serv2 + norm(dv9);
 
     % Phase
-    [dt10,dv10] = Intercept(servicer_2,outer_sats(1),tserv2_2);
-    dv_serv2 = dv_serv2 + norm(dv10);
+    [dt10,dv10a,dv10b] = Phase(servicer_2,outer_sats(1));
+    dv_serv2 = dv_serv2 + norm(dv10a) + norm(dv10b);
     tserv2_3 = tserv2_2 + dt10;
+
     % Maneuver 11 (sat 7 -> sat 8)
     % Plane Change
     [tserv2_4,dv11] = Intercept(servicer_2,outer_sats(2),tserv2_3);
@@ -143,22 +140,96 @@ dv_serv1 = 0;
 %% Calculate Masses
 
 %% Simulate Maneuvers
+t_man = NaN(N_man+N,1);
+j = 0;
 for i = 1:N
-% Maneuver 1
+    % Servicer 1 Maneuvers
+    % Maneuver 1
+    t_man(i+j) = t(i); % Overwrites this if a maneuver happens between time steps
+    if (i == N)
 
-% Maneuver 2
+    elseif (t(i) == 0)
+        t_man(i+j) = 0;
+        servicer_1.v = servicer_1.v + dv1a;
 
-% Maneuver 3
+    elseif ((t(i+1) > tserv1_1) & (t(i) < tserv1_1))
+        t_man(i+j) = tserv1_1;
+        j = j+1;
+        servicer_1.v = servicer_1.v + dv1b;
+    
+    % Maneuver 2
+    elseif ((t(i+1) > tserv1_2) & (t(i) < tserv1_2))
+        t_man(i+j) = tserv1_2;
+        j = j+1;
+        servicer_1.v = servicer_1.v + dv2;
+    
+    % Maneuver 3
+        servicer_1.v = servicer_1.v + dv3a;
+    elseif ((t(i+1) > tserv1_3) & (t(i) < tserv1_3))
+        t_man(i+j) = tserv1_3;
+        j = j+1;
+        servicer_1.v = servicer_1.v + dv3b;
+    % Maneuver 4
+        servicer_1.v = servicer_1.v + dv4a;
+    elseif ((t(i+1) > tserv1_4) & (t(i) < tserv1_4))
+        t_man(i+j) = tserv1_4;
+        j = j+1;
+        servicer_1.v = servicer_1.v + dv4b;
+    % Maneuver 5
+    elseif ((t(i+1) > tserv1_5) & (t(i) < tserv1_5))
+        t_man(i+j) = tserv1_5;
+        j = j+1;
+        servicer_1.v = servicer_1.v + dv5;
+    % Maneuver 6
+    servicer_1.v = servicer_1.v + dv6a;
+    elseif ((t(i+1) > tserv1_6) & (t(i) < tserv1_6))
+        t_man(i+j) = tserv1_6;
+        j = j+1;
+        servicer_1.v = servicer_1.v + dv6b;
+    % Maneuver 7
+    servicer_1.v = servicer_1.v + dv7a;
+    elseif ((t(i+1) > tserv1_7) & (t(i) < tserv1_7))
+        t_man(i+j) = tserv1_7;
+        j = j+1;
+        servicer_1.v = servicer_1.v + dv7b;
+    end
+    
+    % Servicer 2 Maneuvers
+    % Maneuver 8
+    if (i == N)
 
-% Maneuver 4
-
-% Maneuver 5
-
-% Maneuver 6
-
-% Maneuver 7
-
-% Maneuver 8
+    elseif (t(i) == 0)
+        t_man(i+j) = 0;
+        servicer_2.v = servicer_2.v + dv8a;
+    elseif ((t(i+1) > tserv2_1) & (t(i) < tserv2_1))
+        t_man(i+j) = tserv2_1;
+        j = j+1;
+        servicer_2.v = servicer_2.v + dv8b;
+    
+    % Maneuver 9
+    elseif ((t(i+1) > tserv2_2) & (t(i) < tserv2_2))
+        t_man(i+j) = tserv2_2;
+        j = j+1;
+        servicer_2.v = servicer_2.v + dv9;
+    % Maneuver 10
+    servicer_2.v = servicer_2.v + dv10a;
+    elseif ((t(i+1) > tserv2_3) & (t(i) < tserv2_3))
+        t_man(i+j) = tserv2_3;
+        j = j+1;
+        servicer_2.v = servicer_2.v + dv10b;
+    % Maneuver 11
+    elseif ((t(i+1) > tserv2_4) & (t(i) < tserv2_4))
+        t_man(i+j) = tserv2_4;
+        j = j+1;
+        servicer_2.v = servicer_2.v + dv11;
+    % Maneuver 12
+    elseif ((t(i+1) > tserv2_5) & (t(i) < tserv2_5))
+        t_man(i+j) = tserv2_5;
+        j = j+1;
+        servicer_2.v = servicer_2.v + dv12;
+    end
+    
+    % Simulate orbit with updated velocity
 end
 toc
 
@@ -179,6 +250,8 @@ figure("Name","Servicer Path")
 figure("Name","Pos Error")
 
 %% Functions
+
+
 % Hohmann transfer between 2 circular orbits around a given body
 function [dv_1,dv_2,dt,dtheta] = Hohmann(sat1,sat2)
     v_1 = sqrt(sat1.mu/sat1.a);
@@ -197,6 +270,8 @@ function [dv_1,dv_2,dt,dtheta] = Hohmann(sat1,sat2)
     dv_1 = dv_1 *   direction; % initial delta v required (vector)
     dv_2 = dv_2 * (-direction); % secondary delta v required (vector)
 end
+
+
 
 % Intersection of two co-radial circular orbits
 function [t_intercept,dv] = Intercept(sat1,sat2,t_0)
@@ -243,6 +318,8 @@ function [t_intercept,dv] = Intercept(sat1,sat2,t_0)
 
     dv = dv * direction;
 end
+
+
 
 % Phase maneuver between circular orbits
 function [dt,dv1,dv2] = Phase(sat1,sat2)
