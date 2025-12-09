@@ -141,6 +141,27 @@ dv_serv1 = 0;
 %% Plan Maneuvers (Option 2)
 
 %% Calculate Masses
+g0 = 9.81; % [m/s^2]
+Isp = 250; %[s]
+ms = 300; %[kg]
+m_pay = 5; %[kg]
+m_final = ms + m_pay;
+ve = Isp * g0;
+
+% Maneuver 12
+mi = m_final / exp(-dv12*1000/ve);
+m_prop12 = mi - m_final;
+
+% Maneuver 11
+m_final = m_final + m_prop12;
+mi = m_final / exp(-dv11*1000/ve);
+m_prop11 = mi - m_final;
+
+% Maneuver 10
+m_final = m_final + m_prop11;
+mi = m_final / exp(-dv11*1000/ve);
+m_prop11 = mi - m_final;
+
 
 %% Simulate Maneuvers
 for i = 1:N
@@ -256,4 +277,9 @@ function [dt,dv1,dv2] = Phase(sat1,sat2)
 
     dv1 = dv * (-direction);
     dv2 = dv * ( direction);
+end
+
+% Calculate Mass 
+function m_prop = calmass(m_i, m_final, dv)
+
 end

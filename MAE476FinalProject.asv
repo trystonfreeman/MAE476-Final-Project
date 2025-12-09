@@ -141,6 +141,21 @@ dv_serv1 = 0;
 %% Plan Maneuvers (Option 2)
 
 %% Calculate Masses
+g0 = 9.81; % [m/s^2]
+Isp = 250; %[s]
+ms = 300; %[kg]
+m_pay = 5; %[kg]
+m_final = ms + m_pay;
+ve = Isp * g0;
+
+% Maneuver 12
+mi = m_final / exp(-dv12*1000/ve);
+m_prop12 = mi - m_final;
+
+% Maneuver 2
+mi = m_final / exp(-dv2*1000/ve);
+m_prop2 = mi - m_final;
+
 
 %% Simulate Maneuvers
 for i = 1:N
