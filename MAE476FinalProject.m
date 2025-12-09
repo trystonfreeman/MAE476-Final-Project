@@ -58,85 +58,85 @@ end
 
 % THIS SECTION SHOULD BE MOSTLY GOOD
 % Servicer 1 (Staying in center)
-t_0 = 0;
-dv = 0;
+tserv1_0 = 0;
+dv_serv1 = 0;
     % Maneuver 1 (sat 1 -> sat 2)
     % Phase
-    [dt1,dv1] = Phase(inner_sats(1),inner_sats(2));
-    t_1 = t_0 + dt1;
-    dv_serv1 = dv_serv1 + dv1;
+    [dt1,dv1a,dv1b] = Phase(inner_sats(1),inner_sats(2));
+    tserv1_1 = tserv1_0 + dt1;
+    dv_serv1 = dv_serv1 + norm(dv1a) + norm(dv1b);
     servicer_1.phase(inner_sats(2));
     
-    inner_sats(1).propagate(t_1);
-    inner_sats(2).propagate(t_1);
+    inner_sats(1).propagate(tserv1_1);
+    inner_sats(2).propagate(tserv1_1);
 
     
-    servicer_1.propagate(t_1);
+    servicer_1.propagate(tserv1_1);
 
     % Maneuver 2-3 (sat 2 -> sat 3)
     % Plane Change
-    [t_2,dv2] = Intercept(inner_sats(2),inner_sats(3),t_1);
-    dv_serv1 = dv_serv1 + dv2;
-    inner_sats(2).propagate(t_2);
-    inner_sats(3).propagate(t_2);
+    [tserv1_2,dv2] = Intercept(inner_sats(2),inner_sats(3),tserv1_1);
+    dv_serv1 = dv_serv1 + norm(dv2);
+    inner_sats(2).propagate(tserv1_2);
+    inner_sats(3).propagate(tserv1_2);
 
-    servicer_1.propagate(t_2);
+    servicer_1.propagate(tserv1_2);
     servicer_1.plane_change(inner_sats(3));
 
     % Phase
-    [dt3,dv3] = Phase(inner_sats(2),inner_sats(3));
-    t_3 = t_2 + dt3;
-    dv_serv1 = dv_serv1 + dv3;
+    [dt3,dv3a,dv3b] = Phase(inner_sats(2),inner_sats(3));
+    tserv1_3 = tserv1_2 + dt3;
+    dv_serv1 = dv_serv1 + norm(dv3a) + norm(dv3b);
     
     % Maneuver 4 (sat 3 -> sat 4)
     % Phase
-    [dt4,dv4] = Phase(inner_sats(3),inner_sats(4));
-    t_4 = t_3 + dt4;
-    dv_serv1 = dv_serv1 + dv4;
+    [dt4,dv4a,dv4b] = Phase(inner_sats(3),inner_sats(4));
+    tserv1_4 = tserv1_3 + dt4;
+    dv_serv1 = dv_serv1 + norm(dv4a) + norm(dv4b);
 
     % Maneuver 5-6 (sat 4 -> sat 5)
     % Plane Change
-    [t_5,dv5] = Intercept(inner_sats(4),inner_sats(5),t_4);
-    dv_serv1 = dv_serv1 + dv5;
-    inner_sats(4).propagate(t_5);
-    inner_sats(5).propagate(t_5);
+    [tserv1_5,dv5] = Intercept(inner_sats(4),inner_sats(5),tserv1_4);
+    dv_serv1 = dv_serv1 + norm(dv5);
+    inner_sats(4).propagate(tserv1_5);
+    inner_sats(5).propagate(tserv1_5);
     % Phase
-    [dt6,dv6] = Phase(inner_sats(3),inner_sats(4));
-    t_6 = t_5 + dt6;
-    dv_serv1 = dv_serv1 + dv6;
+    [dt6,dv6a,dv6b] = Phase(inner_sats(3),inner_sats(4));
+    tserv1_6 = tserv1_5 + dt6;
+    dv_serv1 = dv_serv1 + norm(dv6a) + norm(dv6b);
 
     % Maneuver 7 (sat 5 -> sat 6)
     % Phase
-    [dt7,dv7] = Phase(inner_sats(3),inner_sats(4));
-    t_7 = t_6 + dt7;
-    dv_serv1 = dv_serv1 + dv7;
-    dv = dv_serv1;
+    [dt7,dv7a,dv7b] = Phase(inner_sats(3),inner_sats(4));
+    tserv1_7 = tserv1_6 + dt7;
+    dv_serv1 = dv_serv1 + norm(dv7a) + norm(dv7b);
 
 % THIS NEEDS WORK
 % Servicer 2 (Going to outer ring)
     % Maneuver 8-10 (sat 1 -> sat 7)
     % Hohmann
     [dv8a,dv8b,dt8,dtheta8] = Hohmann(servicer_2,outer_sats(1));
-    t_8 = dt8;
-    dv_serv2 = dv8a + dv8b;
+    tserv2_1 = dt8;
+    dv_serv2 = norm(dv8a) + norm(dv8b);
 
     % Plane Change
-    [t_9,dv9] = Intercept(servicer_2,outer_sats(1),t_8);
-    dv_serv2 = dv_serv2 + abs(dv9);
+    [tserv2_2,dv9] = Intercept(servicer_2,outer_sats(1),tserv2_1);
+    dv_serv2 = dv_serv2 + norm(dv9);
 
     % Phase
-    [dt10,dv10] = Intercept(servicer_2,outer_sats(1),t_9);
-    dv_serv2 = dv_serv2 + abs(dv10);
-
+    [dt10,dv10] = Intercept(servicer_2,outer_sats(1),tserv2_2);
+    dv_serv2 = dv_serv2 + norm(dv10);
+    tserv2_3 = tserv2_2 + dt10;
     % Maneuver 11 (sat 7 -> sat 8)
     % Plane Change
-    [t_11,dv11] = Intercept(servicer_2,outer_sats(2),t_10);
-    dv_serv2 = dv_serv2 + abs(dv11);
+    [tserv2_4,dv11] = Intercept(servicer_2,outer_sats(2),tserv2_3);
+    dv_serv2 = dv_serv2 + norm(dv11);
 
     % Maneuver 12 (sat 8 -> sat 9)
     % Plane Change
-    [t_12,dv12] = Intercept(servicer_2,outer_sats(3),t_11);
-    dv_serv2 = dv_serv2 + abs(dv12);
+    [tserv2_5,dv12] = Intercept(servicer_2,outer_sats(3),tserv2_4);
+    dv_serv2 = dv_serv2 + norm(dv12);
+    dv = dv_serv1 + dv_serv2;
 
 %% Plan Maneuvers (Option 2)
 
@@ -189,6 +189,13 @@ function [dv_1,dv_2,dt,dtheta] = Hohmann(sat1,sat2)
     dv_2 = v_2 - sqrt(sat2.mu*(2/sat2.a -1/a_t)); % secondary delta v required (scalar)
     dt = pi*sqrt(a_t^3/sat2.mu); % TOF for transfer (scalar)
     dtheta = 2*pi*(dt/(2*pi*sqrt(sat2.a^3/sat1.mu))); % angle sat 2 sweeps during transfer
+    if (v_1 > v_2)
+        direction =  sat1.v/norm(sat1.v);
+    else
+        direction = -sat1.v/norm(sat1.v);
+    end
+    dv_1 = dv_1 *   direction; % initial delta v required (vector)
+    dv_2 = dv_2 * (-direction); % secondary delta v required (vector)
 end
 
 % Intersection of two co-radial circular orbits
@@ -231,13 +238,22 @@ function [t_intercept,dv] = Intercept(sat1,sat2,t_0)
     end
     delta = acosd(cos(sat1.i)^2 +sind(sat1.i)^2*cosd(sat2.omega - sat1.omega));
     dv = 2*sqrt(sat1.mu/sat1.a)*sin(delta/2);
+
+    direction = sign(omega2(t_intercept) - omega1(t_intercept)) * h1(t_intercept)/norm(h1(t_intercept));
+
+    dv = dv * direction;
 end
 
 % Phase maneuver between circular orbits
-function [dt,dv] = Phase(sat1,sat2)
+function [dt,dv1,dv2] = Phase(sat1,sat2)
 
     phase_angle = sat2.u - sat1.u;
     dt = sat2.T* (1 + phase_angle/360);
     a_phase = (sat1.mu * (dt/2*pi)^2)^(1/3);
     dv = 2* abs(sqrt(sat2.mu*(2/sat2.a - 1/a_phase)) - sqrt(sat2.mu/sat2.a));
+
+    direction = sat1.v/norm(sat1.v);
+
+    dv1 = dv * (-direction);
+    dv2 = dv * ( direction);
 end
