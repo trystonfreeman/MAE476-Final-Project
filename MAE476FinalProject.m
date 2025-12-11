@@ -331,58 +331,54 @@ servicer_1_pos(:,1) = servicer_1.r;
 servicer_2_pos(:,1) = servicer_2.r;
 servicer_1_vel(:,1) = servicer_1.v;
 servicer_2_vel(:,1) = servicer_2.v;
-for i = 1:N
+for i = 1:N+N_man
     % Servicer 1 Maneuvers
     % Maneuver 1
     j_last = j;
-    t_man(i+j) = t(i); % Overwrites this if a maneuver happens between time steps
-    if (i == N)
+    t_man(i) = t(i-j); % Overwrites this if a maneuver happens between time steps
+    if (i == 1000*N)
 
     elseif (t(i) == 0)
-        t_man(i+j) = 0;
+        t_man(i) = 0;
         servicer_1_dv = dv1a;
         servicer_2_dv = dv8a;
-    elseif ((t(i+1) > tserv1_1) & (t(i) < tserv1_1))
-        t_man(i+j+1) = tserv1_1;
+    elseif ((t(i-j+1) > tserv1_1) & (t(i-j) < tserv1_1))
+        t_man(i) = tserv1_1;
         servicer_1_dv =  dv1b;
         j = j+1;
     
     % Maneuver 2
-    elseif ((t(i+1) > tserv1_2) & (t(i) < tserv1_2))
-        t_man(i+j+1) = tserv1_2;
-        servicer_1_dv = dv2;
+    elseif ((t(i-j+1) > tserv1_2) & (t(i-j) < tserv1_2))
+        t_man(i) = tserv1_2;
+        servicer_1_dv = dv2 + dv3a;
         j = j+1;
     % Maneuver 3
-        servicer_1_dv = dv3a;
-    elseif ((t(i+1) > tserv1_3) & (t(i) < tserv1_3))
-        t_man(i+j+1) = tserv1_3;
+    elseif ((t(i-j+1) > tserv1_3) & (t(i-j) < tserv1_3))
+        t_man(i) = tserv1_3;
         
-        servicer_1_dv = dv3b;
+        servicer_1_dv = dv3b + dv4a;
         j = j+1;
     % Maneuver 4
-        servicer_1_dv = dv4a;
-    elseif ((t(i+1) > tserv1_4) & (t(i) < tserv1_4))
+    elseif ((t(i-j+1) > tserv1_4) & (t(i) < tserv1_4))
         t_man(i+j+1) = tserv1_4;
         
         servicer_1_dv = dv4b;
         j = j+1;
     % Maneuver 5
-    elseif ((t(i+1) > tserv1_5) & (t(i) < tserv1_5))
-        t_man(i+j+1) = tserv1_5;
+    elseif ((t(i-j+1) > tserv1_5) & (t(i-j) < tserv1_5))
+        t_man(i) = tserv1_5;
         
-        servicer_1_dv = dv5;
+        servicer_1_dv = dv5 + dv6a;
         j = j+1;
     % Maneuver 6
-    servicer_1_dv = dv6a;
-    elseif ((t(i+1) > tserv1_6) & (t(i) < tserv1_6))
-        t_man(i+j+1) = tserv1_6;
+    elseif ((t(i-j+1) > tserv1_6) & (t(i-h) < tserv1_6))
+        t_man(i) = tserv1_6;
         
-        servicer_1_dv = dv6b;
+        servicer_1_dv = dv6b + dv7a;
         j = j+1;
     % Maneuver 7
-    servicer_1_dv = dv7a;
-    elseif ((t(i+1) > tserv1_7) & (t(i) < tserv1_7))
-        t_man(i+j+1) = tserv1_7;
+    elseif ((t(i-j+1) > tserv1_7) & (t(i-j) < tserv1_7))
+        t_man(i) = tserv1_7;
         
         servicer_1_dv = dv7b;
         j = j+1;
@@ -391,50 +387,49 @@ for i = 1:N
     % Maneuver 8
 
         
-    elseif ((t(i+1) > tserv2_1) & (t(i) < tserv2_1))
-        t_man(i+j+1) = tserv2_1;
+    elseif ((t(i-j+1) > tserv2_1) & (t(i-j) < tserv2_1))
+        t_man(i) = tserv2_1;
         
         servicer_2_dv = dv8b;
         j = j+1;
     % Maneuver 9
-    elseif ((t(i+1) > tserv2_2) & (t(i) < tserv2_2))
-        t_man(i+j+1) = tserv2_2;
+    elseif ((t(i-j+1) > tserv2_2) & (t(i-j) < tserv2_2))
+        t_man(i) = tserv2_2;
         
-        servicer_2_dv = dv9;
+        servicer_2_dv = dv9 + dv10a;
         j = j+1;
     % Maneuver 10
-    servicer_2_dv = dv10a;
-    elseif ((t(i+1) > tserv2_3) & (t(i) < tserv2_3))
-        t_man(i+j+1) = tserv2_3;
+    elseif ((t(i-j+1) > tserv2_3) & (t(i-j) < tserv2_3))
+        t_man(i) = tserv2_3;
         
         servicer_2_dv = dv10b;
         j = j+1;
     % Maneuver 11
-    elseif ((t(i+1) > tserv2_4) & (t(i) < tserv2_4))
-        t_man(i+j+1) = tserv2_4;
+    elseif ((t(i-j+1) > tserv2_4) & (t(i-j) < tserv2_4))
+        t_man(i) = tserv2_4;
         
         servicer_2_dv = dv11;
         j = j+1;
     % Maneuver 12
-    elseif ((t(i+1) > tserv2_5) & (t(i) < tserv2_5))
-        t_man(i+j+1) = tserv2_5;
+    elseif ((t(i-j+1) > tserv2_5) & (t(i-j) < tserv2_5))
+        t_man(i) = tserv2_5;
         
         servicer_2_dv = dv12;
         j = j+1;
     else
-        t_man(i+j_last) = t(i);
+        t_man(i) = t(i-j);
 
     end
     
     % Simulate orbit with updated velocity
-    if (i+j>1)
+    if (i>1)
 
-        servicer_1 = Earth_2_Body(servicer_1,t_man(i+j_last)-t_man(i+j_last-1),mu);
-        servicer_2 = Earth_2_Body(servicer_2,t_man(i+j_last)-t_man(i+j_last-1),mu);
-        servicer_1_pos(:,i+j_last) = servicer_1.r;
-        servicer_2_pos(:,i+j_last) = servicer_2.r;
-        servicer_1_vel(:,i+j_last) = servicer_1.v + servicer_1_dv;
-        servicer_2_vel(:,i+j_last) = servicer_2.v + servicer_2_dv;
+        servicer_1 = Earth_2_Body(servicer_1,t_man(i)-t_man(i-1),mu);
+        servicer_2 = Earth_2_Body(servicer_2,t_man(i)-t_man(i-1),mu);
+        servicer_1_pos(:,i) = servicer_1.r;
+        servicer_2_pos(:,i) = servicer_2.r;
+        servicer_1_vel(:,i) = servicer_1.v + servicer_1_dv;
+        servicer_2_vel(:,i) = servicer_2.v + servicer_2_dv;
         servicer_1_dv = 0;
         servicer_2_dv = 0;
     end
