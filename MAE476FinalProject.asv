@@ -349,40 +349,36 @@ for i = 1:N
     
     % Maneuver 2
     elseif ((t(i+1) > tserv1_2) & (t(i) < tserv1_2))
-        t_man(i+j) = tserv1_2;
-        servicer_1_dv = dv2;
+        t_man(i+j+1) = tserv1_2;
+        servicer_1_dv = dv2 + dv3a;
         j = j+1;
     % Maneuver 3
-        servicer_1_dv = dv3a;
     elseif ((t(i+1) > tserv1_3) & (t(i) < tserv1_3))
-        t_man(i+j) = tserv1_3;
+        t_man(i+j+1) = tserv1_3;
         
-        servicer_1_dv = dv3b;
+        servicer_1_dv = dv3b + dv4a;
         j = j+1;
     % Maneuver 4
-        servicer_1_dv = dv4a;
     elseif ((t(i+1) > tserv1_4) & (t(i) < tserv1_4))
-        t_man(i+j) = tserv1_4;
+        t_man(i+j+1) = tserv1_4;
         
         servicer_1_dv = dv4b;
         j = j+1;
     % Maneuver 5
     elseif ((t(i+1) > tserv1_5) & (t(i) < tserv1_5))
-        t_man(i+j) = tserv1_5;
+        t_man(i+j+1) = tserv1_5;
         
-        servicer_1_dv = dv5;
+        servicer_1_dv = dv5 + dv6a;
         j = j+1;
     % Maneuver 6
-    servicer_1_dv = dv6a;
     elseif ((t(i+1) > tserv1_6) & (t(i) < tserv1_6))
-        t_man(i+j) = tserv1_6;
+        t_man(i+j+1) = tserv1_6;
         
-        servicer_1_dv = dv6b;
+        servicer_1_dv = dv6b + dv7a;
         j = j+1;
     % Maneuver 7
-    servicer_1_dv = dv7a;
     elseif ((t(i+1) > tserv1_7) & (t(i) < tserv1_7))
-        t_man(i+j) = tserv1_7;
+        t_man(i+j+1) = tserv1_7;
         
         servicer_1_dv = dv7b;
         j = j+1;
@@ -392,32 +388,31 @@ for i = 1:N
 
         
     elseif ((t(i+1) > tserv2_1) & (t(i) < tserv2_1))
-        t_man(i+j) = tserv2_1;
+        t_man(i+j+1) = tserv2_1;
         
         servicer_2_dv = dv8b;
         j = j+1;
     % Maneuver 9
     elseif ((t(i+1) > tserv2_2) & (t(i) < tserv2_2))
-        t_man(i+j) = tserv2_2;
+        t_man(i+j+1) = tserv2_2;
         
-        servicer_2_dv = dv9;
+        servicer_2_dv = dv9 + dv10a;
         j = j+1;
     % Maneuver 10
-    servicer_2_dv = dv10a;
     elseif ((t(i+1) > tserv2_3) & (t(i) < tserv2_3))
-        t_man(i+j) = tserv2_3;
+        t_man(i+j+1) = tserv2_3;
         
         servicer_2_dv = dv10b;
         j = j+1;
     % Maneuver 11
     elseif ((t(i+1) > tserv2_4) & (t(i) < tserv2_4))
-        t_man(i+j) = tserv2_4;
+        t_man(i+j+1) = tserv2_4;
         
         servicer_2_dv = dv11;
         j = j+1;
     % Maneuver 12
     elseif ((t(i+1) > tserv2_5) & (t(i) < tserv2_5))
-        t_man(i+j) = tserv2_5;
+        t_man(i+j+1) = tserv2_5;
         
         servicer_2_dv = dv12;
         j = j+1;
