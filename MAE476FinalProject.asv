@@ -5,7 +5,7 @@ mu = 398600.44; % [km^3/s^2]?
 J2 = 0.0010826269;
 R = 6378.14;
 dt = 1;  % [s]
-T_total = 48000; %[s]
+T_total = 49000; %[s]
 t = 0:dt:T_total;
 N = T_total/dt + 1;
 N_man = 12; % Number of maneuvers
@@ -172,8 +172,8 @@ dv_serv1 = 0;
     outer_sats(3) = Propagate(outer_sats(3),tserv2_4);
     [servicer_2,tserv2_5,dv12] = Intercept(servicer_2,outer_sats(3),tserv2_4);
     dv_serv2 = dv_serv2 + norm(dv12);
-    dv = dv_serv1 + dv_serv2;
-    
+    dv_total = dv_serv1 + dv_serv2
+    t_total = max(tserv2_5,tserv1_7)
 %% Plan Maneuvers (Option 2)
 for i = 1:6
     inner_sats(i) = reset(inner_sats(i));
@@ -298,24 +298,12 @@ g0 = 9.81; % [m/s^2]
 Isp = 250; %[s]
 ms = 300; %[kg]
 m_pay = 5; %[kg]
-m_final = ms + m_pay;
+m_final2 = ms + m_pay;
 ve = Isp * g0;
 
-% Maneuver 12
-mi = m_final / exp(-dv12*1000/ve);
-m_prop12 = mi - m_final;
+dv_vec = [norm(dv1a) norm(dv1b) norm(dv2) norm(dv3a) norm(dv3b) norm(dv4a) norm(dv4b) norm(dv5) norm(dv6a) norm(dv6b) norm(dv7a) norm(dv7b) norm(dv8a) norm(dv8b) norm(dv9) norm(dv10a) norm(dv10b) norm(dv11) norm(dv12)];
 
-% Maneuver 11
-m_final = m_final + m_prop12;
-mi = m_final / exp(-dv11*1000/ve);
-m_prop11 = mi - m_final;
-
-% Maneuver 10
-m_final = m_final + m_prop11;
-mi = m_final / exp(-dv11*1000/ve);
-m_prop11 = mi - m_final;
-
-
+[m_prop, m_final, m_initial] = prop_mass(dv_vec, Isp, ms, m_pay);
 %% Simulate Maneuvers
 t_man = NaN(N_man+N,1);
 servicer_1_pos = NaN(3,N_man+N);
@@ -331,105 +319,126 @@ servicer_1_pos(:,1) = servicer_1.r;
 servicer_2_pos(:,1) = servicer_2.r;
 servicer_1_vel(:,1) = servicer_1.v;
 servicer_2_vel(:,1) = servicer_2.v;
-for i = 1:N
+man_1 = false;
+man_2 = false;
+man_3 = false;
+man_4 = false;
+man_5 = false;
+man_6 = false;
+man_7 = false;
+man_8 = false;
+man_9 = false;
+man_10 = false;
+man_11 = false;
+man_12 = false;
+t_man(1) = 0;
+servicer_1_dv = dv1a;
+servicer_2_dv = dv8a;
+for i = 1:N+N_man
     % Servicer 1 Maneuvers
     % Maneuver 1
     j_last = j;
-    t_man(i+j) = t(i); % Overwrites this if a maneuver happens between time steps
-    if (i == N)
-
-    elseif (t(i) == 0)
-        t_man(i+j) = 0;
-        servicer_1_dv = dv1a;
-        servicer_2_dv = dv8a;
-    elseif ((t(i+1) > tserv1_1) & (t(i) < tserv1_1))
-        t_man(i+j+1) = tserv1_1;
+    t_man(i) = t(i-j); % Overwrites this if a maneuver happens between time steps
+    if (i == 1000*N)
+        
+    elseif ((t(i-j) > tserv1_1) & (t(i-j-1) < tserv1_1) & ~man_1)
+        t_man(i) = tserv1_1;
         servicer_1_dv =  dv1b;
         j = j+1;
-    
+        man_1 = true;
     % Maneuver 2
-    elseif ((t(i+1) > tserv1_2) & (t(i) < tserv1_2))
-        t_man(i+j+1) = tserv1_2;
+    elseif ((t(i-j+1) > tserv1_2) & (t(i-j) < tserv1_2)& ~man_2)
+        t_man(i) = tserv1_2;
         servicer_1_dv = dv2 + dv3a;
         j = j+1;
+        man_2 = true;
     % Maneuver 3
-    elseif ((t(i+1) > tserv1_3) & (t(i) < tserv1_3))
-        t_man(i+j+1) = tserv1_3;
+    elseif ((t(i-j+1) > tserv1_3) & (t(i-j) < tserv1_3)& ~man_3)
+        t_man(i) = tserv1_3;
         
         servicer_1_dv = dv3b + dv4a;
         j = j+1;
+        man_3 = true;
     % Maneuver 4
-    elseif ((t(i+1) > tserv1_4) & (t(i) < tserv1_4))
-        t_man(i+j+1) = tserv1_4;
+    elseif ((t(i-j+1) > tserv1_4) & (t(i-j) < tserv1_4)& ~man_4)
+        t_man(i) = tserv1_4;
         
         servicer_1_dv = dv4b;
         j = j+1;
+        man_4 = true;
     % Maneuver 5
-    elseif ((t(i+1) > tserv1_5) & (t(i) < tserv1_5))
-        t_man(i+j+1) = tserv1_5;
+    elseif ((t(i-j+1) > tserv1_5) & (t(i-j) < tserv1_5)& ~man_5)
+        t_man(i) = tserv1_5;
         
         servicer_1_dv = dv5 + dv6a;
         j = j+1;
+        man_5 = true;
     % Maneuver 6
-    elseif ((t(i+1) > tserv1_6) & (t(i) < tserv1_6))
-        t_man(i+j+1) = tserv1_6;
+    elseif ((t(i-j+1) > tserv1_6) & (t(i-j) < tserv1_6)& ~man_6)
+        t_man(i) = tserv1_6;
         
         servicer_1_dv = dv6b + dv7a;
         j = j+1;
+        man_6 = true;
     % Maneuver 7
-    elseif ((t(i+1) > tserv1_7) & (t(i) < tserv1_7))
-        t_man(i+j+1) = tserv1_7;
+    elseif ((t(i-j+1) > tserv1_7) & (t(i-j) < tserv1_7)& ~man_7)
+        t_man(i) = tserv1_7;
         
         servicer_1_dv = dv7b;
         j = j+1;
-    
+        man_7 = true;
     % Servicer 2 Maneuvers
     % Maneuver 8
 
         
-    elseif ((t(i+1) > tserv2_1) & (t(i) < tserv2_1))
-        t_man(i+j+1) = tserv2_1;
+    elseif ((t(i-j+1) > tserv2_1) & (t(i-j) < tserv2_1)& ~man_8)
+        t_man(i) = tserv2_1;
         
         servicer_2_dv = dv8b;
         j = j+1;
+        man_8 = true;
     % Maneuver 9
-    elseif ((t(i+1) > tserv2_2) & (t(i) < tserv2_2))
-        t_man(i+j+1) = tserv2_2;
+    elseif ((t(i-j+1) > tserv2_2) & (t(i-j) < tserv2_2)& ~man_9)
+        t_man(i) = tserv2_2;
         
         servicer_2_dv = dv9 + dv10a;
         j = j+1;
+        man_9 = true;
     % Maneuver 10
-    elseif ((t(i+1) > tserv2_3) & (t(i) < tserv2_3))
-        t_man(i+j+1) = tserv2_3;
+    elseif ((t(i-j+1) > tserv2_3) & (t(i-j) < tserv2_3)& ~man_10)
+        t_man(i) = tserv2_3;
         
         servicer_2_dv = dv10b;
         j = j+1;
+        man_10 = true;
     % Maneuver 11
-    elseif ((t(i+1) > tserv2_4) & (t(i) < tserv2_4))
-        t_man(i+j+1) = tserv2_4;
+    elseif ((t(i-j+1) > tserv2_4) & (t(i-j) < tserv2_4)& ~man_11)
+        t_man(i) = tserv2_4;
         
         servicer_2_dv = dv11;
         j = j+1;
+        man_11 = true;
     % Maneuver 12
-    elseif ((t(i+1) > tserv2_5) & (t(i) < tserv2_5))
-        t_man(i+j+1) = tserv2_5;
+    elseif ((t(i-j+1) > tserv2_5) & (t(i-j) < tserv2_5)& ~man_12)
+        t_man(i) = tserv2_5;
         
         servicer_2_dv = dv12;
         j = j+1;
+        man_12 = true;
     else
-        t_man(i+j_last) = t(i);
+        t_man(i) = t(i-j);
 
     end
     
     % Simulate orbit with updated velocity
-    if (i+j>1)
+    if (i>1)
 
-        servicer_1 = Earth_2_Body(servicer_1,t_man(i+j_last)-t_man(i+j_last-1),mu);
-        servicer_2 = Earth_2_Body(servicer_2,t_man(i+j_last)-t_man(i+j_last-1),mu);
-        servicer_1_pos(:,i+j_last) = servicer_1.r;
-        servicer_2_pos(:,i+j_last) = servicer_2.r;
-        servicer_1_vel(:,i+j_last) = servicer_1.v + servicer_1_dv;
-        servicer_2_vel(:,i+j_last) = servicer_2.v + servicer_2_dv;
+        servicer_1 = Earth_2_Body(servicer_1,t_man(i)-t_man(i-1),mu);
+        servicer_2 = Earth_2_Body(servicer_2,t_man(i)-t_man(i-1),mu);
+        servicer_1_pos(:,i) = servicer_1.r;
+        servicer_2_pos(:,i) = servicer_2.r;
+        servicer_1_vel(:,i) = servicer_1.v + servicer_1_dv;
+        servicer_2_vel(:,i) = servicer_2.v + servicer_2_dv;
         servicer_1_dv = 0;
         servicer_2_dv = 0;
     end
@@ -550,8 +559,34 @@ function [sat1_updated,dt,dv1,dv2] = Phase(sat1,sat2)
 end
 
 % Calculate Mass 
-function m_prop = calmass(m_i, m_final, dv)
+function [m_prop, m_final, m_initial] = prop_mass(dv, Isp, ms, m_pay)
+% dv     = vector of maneuvers [dv1 dv2 ... dvN] in km/s
+% Isp    = specific impulse [s]
+% ms     = structural mass [kg]
+% m_pay  = payload mass [kg]
+%
+% m_prop    = propellant used at each maneuver [kg]
+% m_final   = total mass AFTER each maneuver [kg]
+% m_initial = total mass BEFORE each maneuver [kg]
 
+    g0 = 9.81;           % [m/s^2]
+    ve = Isp * g0;       % exhaust velocity [m/s]
+    N = length(dv);
+
+    m_prop    = zeros(1, N);
+    m_final   = zeros(1, N);
+    m_initial = zeros(1, N);
+    m_final(N) = ms + m_pay;
+
+    for k = N: -1: 1
+        mi = m_final(k) / exp(-norm(dv(k))*1000/ve)
+        m_prop(k) = mi - m_final(k);
+        m_initial(k) = mi;
+
+        if k > 1
+            m_final(k-1) = m_final(k) + m_prop(k);
+        end
+    end
 end
 
 % Propagates orbit with given assumptions
