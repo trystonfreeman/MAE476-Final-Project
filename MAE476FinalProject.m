@@ -1,30 +1,64 @@
 clc
 clear
 close all
-tic
+mu = 398600.44; % [km^3/s^2]?
+J2 = 0.0010826269;
+R = 6378.14;
 dt = 1;  % [s]
-T_total = 40000; %[s]
+T_total = 48000; %[s]
 t = 0:dt:T_total;
 N = T_total/dt + 1;
 N_man = 12; % Number of maneuvers
 
 a_inner = 7378.14; % [km]
-a_outer = 8378.14; % [km]
 i_inner = 80; % [deg]
+omega_inner = [0,0,120,120,240,240];
+u_inner = [0,180,60,240,120,300];
+
+a_outer = 8378.14; % [km]
 i_outer = 60; % [deg]
-inner_sats = satellite.empty(0,6);
-inner_sats(1) = satellite(a_inner,i_inner,0,0);
-inner_sats(2) = satellite(a_inner,i_inner,0,180);
-inner_sats(3) = satellite(a_inner,i_inner,120,60);
-inner_sats(4) = satellite(a_inner,i_inner,120,240);
-inner_sats(5) = satellite(a_inner,i_inner,240,120);
-inner_sats(6) = satellite(a_inner,i_inner,240,300);
+omega_outer = [0,120,240];
+u_outer = [0,0,0];
 
+inner_sats(6)= struct("a",[],"i",[],"omega",[],'omega_0',[],"u",[],"u_0",[],"h",[],"r",[],'v',[]);
+outer_sats(3)= inner_sats(6);
+for i=1:6
+    inner_sats(i).a = a_inner;
+    inner_sats(i).a_0 = a_inner;
+    inner_sats(i).i = i_inner;
+    inner_sats(i).i_0 = i_inner;
+    inner_sats(i).omega_0 = omega_inner(i);
+    inner_sats(i).omega = inner_sats(i).omega_0;
+    inner_sats(i).u_0 = u_inner(i);
+    inner_sats(i).mu = mu;
+    inner_sats(i).u = inner_sats(i).u_0;
+    inner_sats(i) = get_IJK(inner_sats(i));
+    inner_sats(i).h = cross(inner_sats(i).r,inner_sats(i).v);
+    inner_sats(i).n = sqrt(mu/inner_sats(i).a^3);
+    inner_sats(i).omega_dot = -1.5 * J2*inner_sats(i).n*(R/inner_sats(i).a)^2*cosd(inner_sats(i).i);
+    inner_sats(i).T = 2*pi*sqrt(inner_sats(i).a^3/mu);
+    inner_sats(i).u_dot =360/inner_sats(i).T;
+    
+end
+for i=1:3
+    outer_sats(i).a = a_outer;
+    outer_sats(i).a_0 = a_outer;
+    outer_sats(i).i = i_outer;
+    outer_sats(i).i_0 = i_outer;
+    outer_sats(i).omega_0 = omega_outer(i);
+    outer_sats(i).omega = outer_sats(i).omega_0;
+    outer_sats(i).u_0 = u_outer(i);
+    outer_sats(i).u = outer_sats(i).u_0;
+    outer_sats(i).mu = mu;
+    outer_sats(i) = get_IJK(outer_sats(i));
+    outer_sats(i).h = cross(outer_sats(i).r,outer_sats(i).v);
+    outer_sats(i).n = sqrt(mu/outer_sats(i).a^3);
+    outer_sats(i).omega_dot = -1.5 * J2*outer_sats(i).n*(R/outer_sats(i).a)^2*cosd(outer_sats(i).i);
+    outer_sats(i).T = 2*pi*sqrt(outer_sats(i).a^3/mu);
+    outer_sats(i).u_dot =360/outer_sats(i).T;
+    
+end
 
-outer_sats = satellite.empty(0,3);
-outer_sats(1) = satellite(a_outer,i_outer,0,0);
-outer_sats(2) = satellite(a_outer,i_outer,120,0);
-outer_sats(3) = satellite(a_outer,i_outer,240,0);
 
 servicer_1 = inner_sats(1);
 servicer_2 = inner_sats(1);
@@ -41,13 +75,16 @@ for i=1:N
         inner_sat_pos(3*j-2:3*j,i) = inner_sats(j).r;
         
         % propagate next time step
-        inner_sats(j) = inner_sats(j).propagate(t(i));
+        inner_sats(j) = Propagate(inner_sats(j),dt);
         
     end
 
     for j = 1:3 % Outer Sats
+        % Logs values at each time step
         outer_sat_pos(3*j-2:3*j,i) = outer_sats(j).r;
-        outer_sats(j) = outer_sats(j).propagate(dt);
+        
+        % propagate next time step
+        outer_sats(j) = Propagate(outer_sats(j),dt);
     end
     
 end
@@ -57,85 +94,204 @@ end
 
 %% Plan Maneuvers (Option 1)
 
-% THIS SECTION SHOULD BE MOSTLY GOOD
 % Servicer 1 (Staying in center)
 tserv1_0 = 0;
 dv_serv1 = 0;
     % Maneuver 1 (sat 1 -> sat 2)
     % Phase
-    [dt1,dv1a,dv1b] = Phase(servicer_1,inner_sats(2));
+    [servicer_1,dt1,dv1a,dv1b] = Phase(servicer_1,inner_sats(2));
     tserv1_1 = tserv1_0 + dt1;
     dv_serv1 = dv_serv1 + norm(dv1a) + norm(dv1b);
 
-    servicer_1.phase(inner_sats(2));
 
     % Maneuver 2-3 (sat 2 -> sat 3)
     % Plane Change
-    [tserv1_2,dv2] = Intercept(inner_sats(2),inner_sats(3),tserv1_1);
+    inner_sats(3) = Propagate(inner_sats(3),dt1);
+    [servicer_1,tserv1_2,dv2] = Intercept(servicer_1,inner_sats(3),tserv1_1);
     dv_serv1 = dv_serv1 + norm(dv2);
-    inner_sats(2).propagate(tserv1_2);
-    inner_sats(3).propagate(tserv1_2);
-
-    servicer_1.propagate(tserv1_2);
-    servicer_1.plane_change(inner_sats(3));
+    
 
     % Phase
-    [dt3,dv3a,dv3b] = Phase(inner_sats(2),inner_sats(3));
+    inner_sats(3) = Propagate(inner_sats(3),tserv1_2-tserv1_1);
+    [servicer_1,dt3,dv3a,dv3b] = Phase(servicer_1,inner_sats(3));
     tserv1_3 = tserv1_2 + dt3;
     dv_serv1 = dv_serv1 + norm(dv3a) + norm(dv3b);
     
     % Maneuver 4 (sat 3 -> sat 4)
     % Phase
-    [dt4,dv4a,dv4b] = Phase(inner_sats(3),inner_sats(4));
+    inner_sats(4) = Propagate(inner_sats(4),tserv1_3);
+    [servicer_1,dt4,dv4a,dv4b] = Phase(servicer_1,inner_sats(4));
     tserv1_4 = tserv1_3 + dt4;
     dv_serv1 = dv_serv1 + norm(dv4a) + norm(dv4b);
 
     % Maneuver 5-6 (sat 4 -> sat 5)
     % Plane Change
-    [tserv1_5,dv5] = Intercept(inner_sats(4),inner_sats(5),tserv1_4);
+    inner_sats(5) = Propagate(inner_sats(5),tserv1_4);
+    [servicer_1,tserv1_5,dv5] = Intercept(servicer_1,inner_sats(5),tserv1_4);
     dv_serv1 = dv_serv1 + norm(dv5);
-    inner_sats(4).propagate(tserv1_5);
-    inner_sats(5).propagate(tserv1_5);
+    
     % Phase
-    [dt6,dv6a,dv6b] = Phase(inner_sats(3),inner_sats(4));
+    inner_sats(5) = Propagate(inner_sats(5),tserv1_5-tserv1_4);
+    [servicer_1,dt6,dv6a,dv6b] = Phase(servicer_1,inner_sats(5));
     tserv1_6 = tserv1_5 + dt6;
     dv_serv1 = dv_serv1 + norm(dv6a) + norm(dv6b);
 
     % Maneuver 7 (sat 5 -> sat 6)
     % Phase
-    [dt7,dv7a,dv7b] = Phase(inner_sats(3),inner_sats(4));
+    inner_sats(6) = Propagate(inner_sats(6),tserv1_6);
+    [servicer_1,dt7,dv7a,dv7b] = Phase(servicer_1,inner_sats(4));
     tserv1_7 = tserv1_6 + dt7;
     dv_serv1 = dv_serv1 + norm(dv7a) + norm(dv7b);
 
-% THIS NEEDS WORK
 % Servicer 2 (Going to outer ring)
     % Maneuver 8-10 (sat 1 -> sat 7)
     % Hohmann
-    [dv8a,dv8b,dt8,dtheta8] = Hohmann(servicer_2,outer_sats(1));
+    [servicer_2,dv8a,dv8b,dt8,dtheta8] = Hohmann(servicer_2,outer_sats(1));
     tserv2_1 = dt8;
     dv_serv2 = norm(dv8a) + norm(dv8b);
 
     % Plane Change
-    [tserv2_2,dv9] = Intercept(servicer_2,outer_sats(1),tserv2_1);
+    outer_sats(1) = Propagate(outer_sats(1),tserv2_1);
+    [servicer_2,tserv2_2,dv9] = Intercept(servicer_2,outer_sats(1),tserv2_1);
     dv_serv2 = dv_serv2 + norm(dv9);
 
     % Phase
-    [dt10,dv10a,dv10b] = Phase(servicer_2,outer_sats(1));
+    outer_sats(1) = Propagate(outer_sats(1),tserv2_2-tserv2_1);
+    [servicer_2,dt10,dv10a,dv10b] = Phase(servicer_2,outer_sats(1));
     dv_serv2 = dv_serv2 + norm(dv10a) + norm(dv10b);
     tserv2_3 = tserv2_2 + dt10;
 
     % Maneuver 11 (sat 7 -> sat 8)
     % Plane Change
-    [tserv2_4,dv11] = Intercept(servicer_2,outer_sats(2),tserv2_3);
+    outer_sats(2) = Propagate(outer_sats(2),tserv2_3);
+    [servicer_2,tserv2_4,dv11] = Intercept(servicer_2,outer_sats(2),tserv2_3);
     dv_serv2 = dv_serv2 + norm(dv11);
 
     % Maneuver 12 (sat 8 -> sat 9)
     % Plane Change
-    [tserv2_5,dv12] = Intercept(servicer_2,outer_sats(3),tserv2_4);
+    outer_sats(3) = Propagate(outer_sats(3),tserv2_4);
+    [servicer_2,tserv2_5,dv12] = Intercept(servicer_2,outer_sats(3),tserv2_4);
     dv_serv2 = dv_serv2 + norm(dv12);
     dv = dv_serv1 + dv_serv2;
-
+    
 %% Plan Maneuvers (Option 2)
+for i = 1:6
+    inner_sats(i) = reset(inner_sats(i));
+end
+for i = 1:3
+    outer_sats(i) = reset(outer_sats(i));
+end
+servicer_1 = inner_sats(1);
+servicer_2 = inner_sats(1);
+% Servicer 1 (Phase then synced)
+tserv1_man2_0 = 0;
+tserv2_man2_0 = 0;
+dv_serv1_man2 = 0;
+dv_serv2_man2 = 0;
+    % Maneuver 1 (sat 1 -> sat 2)
+    % Phase
+    [servicer_1,dt1,dv1a,dv1b] = Phase(servicer_1,inner_sats(2));
+    tserv1_man2_1 = tserv1_man2_0 + dt1;
+    dv_serv1_man2 = dv_serv1_man2 + norm(dv1a) + norm(dv1b);
+
+
+    % Maneuver 2-3 (sat 2 -> sat 3)
+    % Plane Change
+    inner_sats(3) = Propagate(inner_sats(3),dt1);
+    [servicer_1,tserv1_man2_2,dv2] = Intercept(servicer_1,inner_sats(3),tserv1_man2_1);
+    dv_serv1_man2 = dv_serv1_man2 + norm(dv2);
+    
+
+    % Phase
+    inner_sats(3) = Propagate(inner_sats(3),tserv1_man2_2-tserv1_man2_1);
+    [servicer_1,dt3,dv3a,dv3b] = Phase(servicer_1,inner_sats(3));
+    tserv1_man2_3 = tserv1_man2_2 + dt3;
+    dv_serv1_man2 = dv_serv1_man2 + norm(dv3a) + norm(dv3b);
+    
+    % Maneuver 4-5 (sat 3 -> sat 5)
+    % Plane Change
+    inner_sats(5) = Propagate(inner_sats(5),tserv1_man2_3);
+    [servicer_1,tserv1_man2_4,dv4] = Intercept(servicer_1,inner_sats(5),tserv1_man2_3);
+    dv_serv1_man2 = dv_serv1_man2 + norm(dv4);
+
+    % Phase
+    inner_sats(5) = Propagate(inner_sats(3),tserv1_man2_4-tserv1_man2_3);
+    [servicer_1,dt5,dv5a,dv5b] = Phase(servicer_1,inner_sats(5));
+    tserv1_man2_5 = tserv1_man2_4 + dt5;
+    dv_serv1_man2 = dv_serv1_man2 + norm(dv5a) + norm(dv5b);
+
+    % Maneuver 6-8 (sat 5 -> sat 7)
+    % Hohmann Transfer
+    outer_sats(1) = Propagate(outer_sats(1),tserv1_man2_5);
+    [servicer_1,dv6a,dv6b,dt6,dtheta6] = Hohmann(servicer_1,outer_sats(1));
+    tserv1_man2_6 = tserv1_man2_5 + dt6;
+    dv_serv1_man2 = dv_serv1_man2 + norm(dv6a) + norm(dv6b);
+
+    % Plane Change
+    outer_sats(1) = Propagate(outer_sats(1),tserv1_man2_6-tserv1_man2_5);
+    [servicer_1,tserv1_man2_7,dv7] = Intercept(servicer_1,outer_sats(1),tserv1_man2_6);
+    dv_serv1_man2 = dv_serv1_man2 + norm(dv7);
+
+    % Phase
+    outer_sats(1) = Propagate(outer_sats(1),tserv1_man2_7-tserv1_man2_6);
+    [servicer_1,dt8,dv8a,dv8b] = Phase(servicer_1,outer_sats(1));
+    tserv1_man2_5 = tserv1_man2_4 + dt8;
+    dv_serv1_man2 = dv_serv1_man2 + norm(dv8a) + norm(dv8b);
+
+% Servicer 2 (Hits extra one on outer layer)
+    % Maneuver 9-10 (sat 1 -> sat 4)
+    
+    % Plane Change
+    [servicer_2,tserv2_man2_9,dv9] = Intercept(servicer_2,inner_sats(4),0);
+    dv_serv2_man2 = dv_serv2_man2 + norm(dv9);
+
+    % Phase
+    inner_sats(4) = Propagate(inner_sats(4),tserv2_man2_9);
+    [servicer_2,dt10,dv10a,dv10b] = Phase(servicer_2,inner_sats(4));
+    tserv2_man2_10 = tserv2_man2_9 + dt8;
+    dv_serv2_man2 = dv_serv2_man2 + norm(dv10a) + norm(dv10b);
+
+    % Maneuver 11-12 (sat 4 -> sat 6)
+    % Plane Change
+    inner_sats(6) = Propagate(inner_sats(6),tserv2_man2_10);
+    [servicer_2,tserv2_man2_11,dv11] = Intercept(servicer_2,inner_sats(6),tserv2_man2_10);
+    dv_serv2_man2 = dv_serv2_man2 + norm(dv11);
+
+    % Phase
+    inner_sats(6) = Propagate(inner_sats(6),tserv2_man2_11-tserv2_man2_10);
+    [servicer_2,dt12,dv12a,dv12b] = Phase(servicer_2,inner_sats(6));
+    tserv2_man2_12 = tserv2_man2_11 + dt12;
+    dv_serv2_man2 = dv_serv2_man2 + norm(dv12a) + norm(dv12b);
+
+    % Maneuver 13-15 (sat 6 -> sat 8)
+    % Hohmann Transfer
+    outer_sats(2) = Propagate(outer_sats(2),tserv2_man2_12);
+    [servicer_2,dv13a,dv13b,dt13,dtheta13] = Hohmann(servicer_2,outer_sats(2));
+    tserv2_man2_13 = tserv2_man2_12 + dt13;
+    dv_serv2_man2 = dv_serv2_man2 + norm(dv13a) + norm(dv13b);
+
+    % Plane Change
+    outer_sats(2) = Propagate(outer_sats(2),tserv2_man2_13-tserv2_man2_12);
+    [servicer_2,tserv2_man2_14,dv14] = Intercept(servicer_2, outer_sats(2),tserv2_man2_13);
+    dv_serv2_man2 = dv_serv2_man2 + norm(dv14);
+
+    % Phase
+    outer_sats(2) = Propagate(outer_sats(2),tserv2_man2_14-tserv2_man2_13);
+    [servicer_2,dt15,dv15a,dv15b] = Phase(servicer_2, outer_sats(2));
+    tserv2_man2_15 = tserv2_man2_14 + dt15;
+    dv_serv2_man2 = dv_serv2_man2 + norm(dv15a) + norm(dv15b);
+
+    % Maneuver 16-17 (sat 8 -> sat 9)
+    % Plane Change
+    outer_sats(3) = Propagate(outer_sats(3),tserv2_man2_15);
+    [servicer_2,tserv2_man2_16,dv16] = Intercept(servicer_2, outer_sats(3),tserv2_man2_15);
+    dv_serv2_man2 = dv_serv2_man2 + norm(dv16);
+
+    % Phase
+    outer_sats(3) = Propagate(outer_sats(3),tserv2_man2_16-tserv2_man2_15);
+    [servicer_2,dt17,dv17a,dv17b] = Phase(servicer_2, outer_sats(3));
+    tserv2_man2_17 = tserv2_man2_16 + dt17;
+    dv_serv2_man2 = dv_serv2_man2 + norm(dv17a) + norm(dv17b);
 
 %% Calculate Masses
 g0 = 9.81; % [m/s^2]
@@ -162,95 +318,126 @@ m_prop11 = mi - m_final;
 
 %% Simulate Maneuvers
 t_man = NaN(N_man+N,1);
+servicer_1_pos = NaN(3,N_man+N);
+servicer_2_pos = NaN(3,N_man+N);
+servicer_1_vel = NaN(3,N_man+N);
+servicer_1_dv = NaN(3,N_man);
+servicer_2_vel = NaN(3,N_man+N);
+servicer_2_dv = NaN(3,N_man);
 j = 0;
+servicer_1 = reset(servicer_1);
+servicer_2 = reset(servicer_2);
+servicer_1_pos(:,1) = servicer_1.r;
+servicer_2_pos(:,1) = servicer_2.r;
+servicer_1_vel(:,1) = servicer_1.v;
+servicer_2_vel(:,1) = servicer_2.v;
 for i = 1:N
     % Servicer 1 Maneuvers
     % Maneuver 1
+    j_last = j;
     t_man(i+j) = t(i); % Overwrites this if a maneuver happens between time steps
     if (i == N)
 
     elseif (t(i) == 0)
         t_man(i+j) = 0;
-        servicer_1.v = servicer_1.v + dv1a;
-
+        servicer_1_dv = dv1a;
+        servicer_2_dv = dv8a;
     elseif ((t(i+1) > tserv1_1) & (t(i) < tserv1_1))
-        t_man(i+j) = tserv1_1;
+        t_man(i+j+1) = tserv1_1;
+        servicer_1_dv =  dv1b;
         j = j+1;
-        servicer_1.v = servicer_1.v + dv1b;
     
     % Maneuver 2
     elseif ((t(i+1) > tserv1_2) & (t(i) < tserv1_2))
-        t_man(i+j) = tserv1_2;
+        t_man(i+j+1) = tserv1_2;
+        servicer_1_dv = dv2;
         j = j+1;
-        servicer_1.v = servicer_1.v + dv2;
-    
     % Maneuver 3
-        servicer_1.v = servicer_1.v + dv3a;
+        servicer_1_dv = dv3a;
     elseif ((t(i+1) > tserv1_3) & (t(i) < tserv1_3))
-        t_man(i+j) = tserv1_3;
+        t_man(i+j+1) = tserv1_3;
+        
+        servicer_1_dv = dv3b;
         j = j+1;
-        servicer_1.v = servicer_1.v + dv3b;
     % Maneuver 4
-        servicer_1.v = servicer_1.v + dv4a;
+        servicer_1_dv = dv4a;
     elseif ((t(i+1) > tserv1_4) & (t(i) < tserv1_4))
-        t_man(i+j) = tserv1_4;
+        t_man(i+j+1) = tserv1_4;
+        
+        servicer_1_dv = dv4b;
         j = j+1;
-        servicer_1.v = servicer_1.v + dv4b;
     % Maneuver 5
     elseif ((t(i+1) > tserv1_5) & (t(i) < tserv1_5))
-        t_man(i+j) = tserv1_5;
+        t_man(i+j+1) = tserv1_5;
+        
+        servicer_1_dv = dv5;
         j = j+1;
-        servicer_1.v = servicer_1.v + dv5;
     % Maneuver 6
-    servicer_1.v = servicer_1.v + dv6a;
+    servicer_1_dv = dv6a;
     elseif ((t(i+1) > tserv1_6) & (t(i) < tserv1_6))
-        t_man(i+j) = tserv1_6;
+        t_man(i+j+1) = tserv1_6;
+        
+        servicer_1_dv = dv6b;
         j = j+1;
-        servicer_1.v = servicer_1.v + dv6b;
     % Maneuver 7
-    servicer_1.v = servicer_1.v + dv7a;
+    servicer_1_dv = dv7a;
     elseif ((t(i+1) > tserv1_7) & (t(i) < tserv1_7))
-        t_man(i+j) = tserv1_7;
+        t_man(i+j+1) = tserv1_7;
+        
+        servicer_1_dv = dv7b;
         j = j+1;
-        servicer_1.v = servicer_1.v + dv7b;
-    end
     
     % Servicer 2 Maneuvers
     % Maneuver 8
-    if (i == N)
 
-    elseif (t(i) == 0)
-        t_man(i+j) = 0;
-        servicer_2.v = servicer_2.v + dv8a;
+        
     elseif ((t(i+1) > tserv2_1) & (t(i) < tserv2_1))
-        t_man(i+j) = tserv2_1;
+        t_man(i+j+1) = tserv2_1;
+        
+        servicer_2_dv = dv8b;
         j = j+1;
-        servicer_2.v = servicer_2.v + dv8b;
-    
     % Maneuver 9
     elseif ((t(i+1) > tserv2_2) & (t(i) < tserv2_2))
-        t_man(i+j) = tserv2_2;
+        t_man(i+j+1) = tserv2_2;
+        
+        servicer_2_dv = dv9;
         j = j+1;
-        servicer_2.v = servicer_2.v + dv9;
     % Maneuver 10
-    servicer_2.v = servicer_2.v + dv10a;
+    servicer_2_dv = dv10a;
     elseif ((t(i+1) > tserv2_3) & (t(i) < tserv2_3))
-        t_man(i+j) = tserv2_3;
+        t_man(i+j+1) = tserv2_3;
+        
+        servicer_2_dv = dv10b;
         j = j+1;
-        servicer_2.v = servicer_2.v + dv10b;
     % Maneuver 11
     elseif ((t(i+1) > tserv2_4) & (t(i) < tserv2_4))
-        t_man(i+j) = tserv2_4;
+        t_man(i+j+1) = tserv2_4;
+        
+        servicer_2_dv = dv11;
         j = j+1;
-        servicer_2.v = servicer_2.v + dv11;
     % Maneuver 12
     elseif ((t(i+1) > tserv2_5) & (t(i) < tserv2_5))
-        t_man(i+j) = tserv2_5;
+        t_man(i+j+1) = tserv2_5;
+        
+        servicer_2_dv = dv12;
         j = j+1;
-        servicer_2.v = servicer_2.v + dv12;
+    else
+        t_man(i+j_last) = t(i);
+
     end
     
     % Simulate orbit with updated velocity
+    if (i+j>1)
+
+        servicer_1 = Earth_2_Body(servicer_1,t_man(i+j_last)-t_man(i+j_last-1),mu);
+        servicer_2 = Earth_2_Body(servicer_2,t_man(i+j_last)-t_man(i+j_last-1),mu);
+        servicer_1_pos(:,i+j_last) = servicer_1.r;
+        servicer_2_pos(:,i+j_last) = servicer_2.r;
+        servicer_1_vel(:,i+j_last) = servicer_1.v + servicer_1_dv;
+        servicer_2_vel(:,i+j_last) = servicer_2.v + servicer_2_dv;
+        servicer_1_dv = 0;
+        servicer_2_dv = 0;
+    end
 end
 toc
 
@@ -267,14 +454,14 @@ plot3(outer_sat_pos(3*i-2,:),outer_sat_pos(3*i-1,:),outer_sat_pos(3*i,:))
 end
 view(3)
 figure("Name","Servicer Path")
-
+plot3(servicer_1_pos(1,:),servicer_1_pos(2,:),servicer_1_pos(3,:))
 figure("Name","Pos Error")
 
 %% Functions
 
 
 % Hohmann transfer between 2 circular orbits around a given body
-function [dv_1,dv_2,dt,dtheta] = Hohmann(sat1,sat2)
+function [sat1_updated,dv_1,dv_2,dt,dtheta] = Hohmann(sat1,sat2)
     v_1 = sqrt(sat1.mu/sat1.a);
     v_2 = sqrt(sat2.mu/sat2.a);
     a_t = (sat1.a + sat2.a)/2;
@@ -290,16 +477,20 @@ function [dv_1,dv_2,dt,dtheta] = Hohmann(sat1,sat2)
     end
     dv_1 = dv_1 *   direction; % initial delta v required (vector)
     dv_2 = dv_2 * (-direction); % secondary delta v required (vector)
+    sat1_updated = sat1;
+    sat1_updated.u = sat1.u + 180;
+    sat1_updated.a = sat2.a;
+    sat1_updated = Propagate(sat1_updated,0);
 end
 
 
 
 % Intersection of two co-radial circular orbits
-function [t_intercept,dv] = Intercept(sat1,sat2,t_0)
-    u1 = @(t) wrapTo360(sat1.u_0 + sat1.u_dot*t);
-    u2 = @(t) wrapTo360(sat2.u_0 + sat2.u_dot*t);
-    omega1 = @(t) sat1.omega_0 + sat1.omega_dot*t;
-    omega2 = @(t) sat2.omega_0 + sat2.omega_dot*t;
+function [sat1_updated,t_intercept,dv] = Intercept(sat1,sat2,t_0)
+    u1 = @(t) wrapTo360(sat1.u + sat1.u_dot*(t-t_0));
+    u2 = @(t) wrapTo360(sat2.u + sat2.u_dot*(t-t_0));
+    omega1 = @(t) sat1.omega + sat1.omega_dot*(t-t_0);
+    omega2 = @(t) sat2.omega + sat2.omega_dot*(t-t_0);
     R_i = [1 0 0;
            0 cosd(-sat1.i)  sind(-sat1.i);
            0 sind(-sat1.i) -cosd(-sat1.i)];
@@ -332,20 +523,24 @@ function [t_intercept,dv] = Intercept(sat1,sat2,t_0)
         t_0 = t_intercept + 0.5*sat1.T;
         t_intercept = fsolve(separation,t_0);
     end
-    delta = acosd(cos(sat1.i)^2 +sind(sat1.i)^2*cosd(sat2.omega - sat1.omega));
+    delta = acosd(cos(sat1.i)^2 +sind(sat1.i)^2*cosd(omega2(t_intercept) - omega1(t_intercept)));
     dv = 2*sqrt(sat1.mu/sat1.a)*sin(delta/2);
 
     direction = sign(omega2(t_intercept) - omega1(t_intercept)) * h1(t_intercept)/norm(h1(t_intercept));
 
     dv = dv * direction;
+    sat1_updated = sat2;
+    sat1_updated.u = acosd(cosd(sat1.i)*sind(sat2.i) - sind(sat1.i)*cosd(sat2.i)*cosd(omega2(t_intercept) - omega1(t_intercept)))/sind(delta);
+    sat1_updated.omega = omega2(t_intercept);
+    sat1_updated = Propagate(sat1_updated,0);
 end
 
 
 
 % Phase maneuver between circular orbits
-function [dt,dv1,dv2] = Phase(sat1,sat2)
+function [sat1_updated,dt,dv1,dv2] = Phase(sat1,sat2)
 
-    phase_angle = sat2.u - sat1.u;
+    phase_angle = wrapTo360(sat2.u - sat1.u);
     dt = sat2.T* (1 + phase_angle/360);
     a_phase = (sat1.mu * (dt/2*pi)^2)^(1/3);
     dv = 2* abs(sqrt(sat2.mu*(2/sat2.a - 1/a_phase)) - sqrt(sat2.mu/sat2.a));
@@ -354,9 +549,65 @@ function [dt,dv1,dv2] = Phase(sat1,sat2)
 
     dv1 = dv * (-direction);
     dv2 = dv * ( direction);
+    sat1_updated = sat1;
+    sat1_updated.omega = sat1.omega + sat1.omega_dot*dt;
+    sat1_updated = Propagate(sat1_updated,0);
 end
 
 % Calculate Mass 
 function m_prop = calmass(m_i, m_final, dv)
 
+end
+
+% Propagates orbit with given assumptions
+function updated_sat = Propagate(sat,dt)
+    sat.u = sat.u + dt*sat.u_dot;
+    sat.omega = sat.omega + (sat.omega_dot)*(180/pi)*dt;
+    sat = get_IJK(sat);
+    sat.h = cross(sat.r,sat.v);
+    updated_sat = sat;
+    
+end
+
+function sat_updated = get_IJK(sat)
+            sat_updated = sat;
+            R3_omega = [cosd(-sat.omega), sind(-sat.omega), 0;...
+                        sind(-sat.omega),-cosd(-sat.omega), 0;...
+                        0              , 0                1];
+            R3_u = [cosd(-sat.u), sind(-sat.u), 0;...
+                    sind(-sat.u),-cosd(-sat.u), 0;...
+                    0          , 0          , 1];
+            R1_i = [1 0 0;...
+                    0 cosd(-sat.i), sind(-sat.i);...
+                    0 sind(-sat.i),-cosd(-sat.i)];
+            r = R3_omega*R1_i*R3_u*[sat.a;0;0];
+            r = r*sat.a/norm(r); % effectively normalizes transformation
+            v = R3_omega*R1_i*R3_u*[0; sqrt(sat.mu/sat.a); 0];
+            v = sqrt(sat.mu/sat.a)*v/norm(v);
+            sat_updated.r = r;
+            sat_updated.v = v;
+end
+function updated_sat = reset(sat)
+    updated_sat = sat;
+    updated_sat.u = updated_sat.u_0;
+    updated_sat.omega = updated_sat.omega_0;
+    updated_sat.a = updated_sat.a_0;
+    updated_sat.i = updated_sat.i_0;
+    updated_sat = Propagate(updated_sat,0);
+end
+function updated_sat = Earth_2_Body(sat,dt,mu)
+    q_0 = [sat.r;sat.v];
+    r = @(q) sqrt(q(1)^2 + q(2)^2 + q(3)^2);
+    q_prime = @(t,q)[ q(4);
+                  q(5);
+                  q(6);
+                 -mu*q(1)/r(q)^3;
+                 -mu*q(2)/r(q)^3;
+                 -mu*q(3)/r(q)^3];
+    t_span = [0,dt]
+    options = odeset('RelTol',1e-12,'AbsTol',1e-12);
+    [t,q_1] = ode45(q_prime,t_span,q_0,options);
+    sat.r = q_1(end,1:3)';
+    sat.v = q_1(end,4:6)';
+    updated_sat = sat;
 end
