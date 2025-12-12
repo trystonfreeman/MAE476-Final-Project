@@ -5,7 +5,7 @@ mu = 398600.44; % [km^3/s^2]?
 J2 = 0.0010826269;
 R = 6378.14;
 dt = 1;  % [s]
-T_total = 49000; %[s]
+T_total = 57000; %[s]
 t = 0:dt:T_total;
 N = T_total/dt + 1;
 N_man = 12; % Number of maneuvers
@@ -320,8 +320,14 @@ servicer_1_dv = NaN(3,N_man);
 servicer_2_vel = NaN(3,N_man+N);
 servicer_2_dv = NaN(3,N_man);
 j = 0;
-servicer_1 = reset(servicer_1);
-servicer_2 = reset(servicer_2);
+for i = 1:6
+    inner_sats(i) = reset(inner_sats(i));
+end
+for i = 1:3
+    outer_sats(i) = reset(outer_sats(i));
+end
+servicer_1 = inner_sats(1);
+servicer_2 = inner_sats(1);
 servicer_1_pos(:,1) = servicer_1.r;
 servicer_2_pos(:,1) = servicer_2.r;
 servicer_1_vel(:,1) = servicer_1.v;
@@ -341,7 +347,7 @@ man_12 = false;
 t_man(1) = 0;
 servicer_1_dv = dv1a;
 servicer_2_dv = dv8a;
-for i = 1:N+N_man
+for i = 1:N+N_man-1
     % Servicer 1 Maneuvers
     % Maneuver 1
     j_last = j;
@@ -439,7 +445,8 @@ for i = 1:N+N_man
     
     % Simulate orbit with updated velocity
     if (i>1)
-
+        servicer_1.v = servicer_1_vel(:,i-1);
+        servicer_2.v = servicer_2_vel(:,i-1);
         servicer_1 = Earth_2_Body(servicer_1,t_man(i)-t_man(i-1),mu);
         servicer_2 = Earth_2_Body(servicer_2,t_man(i)-t_man(i-1),mu);
         servicer_1_pos(:,i) = servicer_1.r;
@@ -465,8 +472,19 @@ plot3(outer_sat_pos(3*i-2,:),outer_sat_pos(3*i-1,:),outer_sat_pos(3*i,:))
 end
 view(3)
 figure("Name","Servicer Path")
-plot3(servicer_1_pos(1,:),servicer_1_pos(2,:),servicer_1_pos(3,:))
-figure("Name","Pos Error")
+hold on
+for i = 1:3
+plot3(inner_sat_pos(3*i-2,:),inner_sat_pos(3*i-1,:),inner_sat_pos(3*i,:))
+%plot3([0,inner_sat_h(3*i-2,1)],[0,inner_sat_h(3*i-1,1)],[0,inner_sat_h(3*i,1)])
+end
+
+for i = 1:3
+%plot3(outer_sat_pos(3*i-2,:),outer_sat_pos(3*i-1,:),outer_sat_pos(3*i,:))
+end
+plot3(servicer_1_pos(1,1:10000),servicer_1_pos(2,1:10000),servicer_1_pos(3,1:10000))
+view(3)
+grid on
+%figure("Name","Pos Error")
 
 %% Functions
 
