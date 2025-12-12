@@ -181,6 +181,8 @@ dv_serv1 = 0;
     dv_serv2 = dv_serv2 + norm(dv12);
     dv_total = dv_serv1 + dv_serv2
     t_total = max(tserv2_5,tserv1_7)
+    fprintf("Total delta v strategy 1 [km/s]: %f\n",dv_total)
+    fprintf("Total Time Strategy 1 [hr]: %f\n",t_total/3600)
 %% Plan Maneuvers (Option 2)
 for i = 1:6
     inner_sats(i) = reset(inner_sats(i));
@@ -299,7 +301,10 @@ dv_serv2_man2 = 0;
     [servicer_2,dt17,dv17a,dv17b] = Phase(servicer_2, outer_sats(3));
     tserv2_man2_17 = tserv2_man2_16 + dt17;
     dv_serv2_man2 = dv_serv2_man2 + norm(dv17a) + norm(dv17b);
-
+    dv_total_strategy2 = dv_serv1_man2 + dv_serv2_man2;
+    t_total_strategy2 = max(tserv2_man2_17,tserv1_man2_5);
+    fprintf("Total delta v strategy 2 [km/s]: %f\n",dv_total_strategy2)
+    fprintf("Total Time Strategy 2 [hr]: %f\n",t_total_strategy2/3600)
 %% Calculate Masses
 g0 = 9.81; % [m/s^2]
 Isp = 250; %[s]
@@ -311,6 +316,9 @@ ve = Isp * g0;
 dv_vec = [norm(dv1a) norm(dv1b) norm(dv2) norm(dv3a) norm(dv3b) norm(dv4a) norm(dv4b) norm(dv5) norm(dv6a) norm(dv6b) norm(dv7a) norm(dv7b) norm(dv8a) norm(dv8b) norm(dv9) norm(dv10a) norm(dv10b) norm(dv11) norm(dv12)];
 
 [m_prop, m_final, m_initial] = prop_mass(dv_vec, Isp, ms, m_pay);
+for i=1:length(m_prop)
+    fprintf("Mass of Propellant for dv %i [kg]: %f",[i,m_prop(i)])
+end
 %% Simulate Maneuvers
 t_man = NaN(N_man+N,1);
 servicer_1_pos = NaN(3,N_man+N);
@@ -447,8 +455,8 @@ for i = 1:N+N_man-1
     if (i>1)
         servicer_1.v = servicer_1_vel(:,i-1);
         servicer_2.v = servicer_2_vel(:,i-1);
-        servicer_1 = Earth_2_Body(servicer_1,t_man(i)-t_man(i-1),mu);
-        servicer_2 = Earth_2_Body(servicer_2,t_man(i)-t_man(i-1),mu);
+        servicer_1 = Earth_2_Body(servicer_1,t_man(i)-t_man(i-1),mu,J2,R);
+        servicer_2 = Earth_2_Body(servicer_2,t_man(i)-t_man(i-1),mu,J2,R);
         servicer_1_pos(:,i) = servicer_1.r;
         servicer_2_pos(:,i) = servicer_2.r;
         servicer_1_vel(:,i) = servicer_1.v + servicer_1_dv;
@@ -460,17 +468,7 @@ end
 toc
 
 %% Figures
-figure("Name","Constellation")
-hold on
-for i = 1:6
-plot3(inner_sat_pos(3*i-2,:),inner_sat_pos(3*i-1,:),inner_sat_pos(3*i,:))
-%plot3([0,inner_sat_h(3*i-2,1)],[0,inner_sat_h(3*i-1,1)],[0,inner_sat_h(3*i,1)])
-end
 
-for i = 1:3
-plot3(outer_sat_pos(3*i-2,:),outer_sat_pos(3*i-1,:),outer_sat_pos(3*i,:))
-end
-view(3)
 figure("Name","Servicer Path")
 hold on
 for i = 1:3
@@ -481,9 +479,14 @@ end
 for i = 1:3
 %plot3(outer_sat_pos(3*i-2,:),outer_sat_pos(3*i-1,:),outer_sat_pos(3*i,:))
 end
-plot3(servicer_1_pos(1,1:15000),servicer_1_pos(2,1:15000),servicer_1_pos(3,1:20000))
+plot3(servicer_1_pos(1,1:10000),servicer_1_pos(2,1:10000),servicer_1_pos(3,1:10000))
+plot3(servicer_2_pos(1,1:10000),servicer_2_pos(2,1:10000),servicer_2_pos(3,1:10000))
 view(3)
-%figure("Name","Pos Error")
+grid on
+xlabel("x-pos [km]")
+ylabel('y-pos [km]')
+zlabel('z-label [km]')
+
 
 %% Functions
 
@@ -649,7 +652,7 @@ function updated_sat = reset(sat)
     updated_sat.i = updated_sat.i_0;
     updated_sat = Propagate(updated_sat,0);
 end
-function updated_sat = Earth_2_Body(sat,dt,mu)
+function updated_sat = Earth_2_Body(sat,dt,mu,J2,R)
     q_0 = [sat.r;sat.v];
     r = @(q) sqrt(q(1)^2 + q(2)^2 + q(3)^2);
     q_prime = @(t,q)[ q(4);
@@ -657,7 +660,13 @@ function updated_sat = Earth_2_Body(sat,dt,mu)
                   q(6);
                  -mu*q(1)/r(q)^3;
                  -mu*q(2)/r(q)^3;
-                 -mu*q(3)/r(q)^3];
+                 -mu*q(3)/r(q)^3] +...
+                 0*1.5*J2*mu*R^2/r(q)^5*[0;
+                  0;
+                  0;
+                  q(1)*(5*q(3)^2/r(q)^2-1);
+                  q(2)*(5*q(3)^2/r(q)^2-1);
+                  q(3)*(5*q(3)^2/r(q)^2-3)];
     t_span = [0,dt]
     options = odeset('RelTol',1e-12,'AbsTol',1e-12);
     [t,q_1] = ode45(q_prime,t_span,q_0,options);
